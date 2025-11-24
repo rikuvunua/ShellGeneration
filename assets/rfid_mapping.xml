@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rfidMappings>
+  <mapping tag="04 4B 38 0A BB 2A 81" parameterIndex="1"/>
+  <mapping tag="04 4A 38 0A BB 2A 81" parameterIndex="2"/>
+  <mapping tag="04 4D 38 0A BB 2A 81" parameterIndex="3"/>
+  <mapping tag="04 4C 38 0A BB 2A 81" parameterIndex="4"/>
+  <mapping tag="04 53 38 0A BB 2A 81" parameterIndex="5"/>
+  <mapping tag="04 54 38 0A BB 2A 81" parameterIndex="6"/>
+</rfidMappings>
