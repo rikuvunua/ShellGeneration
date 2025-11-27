@@ -9,12 +9,12 @@ import processing.opengl.*;
 ControlP5 cp5;
 RadioButton radio;
 Slider sliderVertexCount, sliderGrowthStep, sliderBendAngle, sliderTwistAngle, sliderConeHight, sliderConeWidth, sliderSideShift, sliderThickness;
+Slider sliderOpeningFlatten, sliderOpeningRotation;
 Button resetButton, undoButton, redoButton;
-CheckBox checkboxReferenceVectors, checkboxMotherCurve;
 
 DropdownList dropdownParameterSets;
 
-Group parametersGroup, exportGroup;
+Group parametersGroup, openingShapeGroup, exportGroup;
 
 float rotX = 0;
 float rotY = 0;
@@ -34,6 +34,8 @@ float initSVL = 3f;
 float sideShift = 0;
 float growthRate = 1.03f;
 float shellThickness = 1.0f;  // 默认厚度
+float openingFlatten = 0.0f;   // 0 表示圆形，1 表示扁平化最大
+float openingRotationDeg = 0.0f; // 旋转角度（度）
 
 // 顶点数量控制（默认 12，可扩展）
 static final int MIN_VERTEX_COUNT = 12;
@@ -67,9 +69,6 @@ boolean isUndoingOrRedoing = false;  // 防止在撤销/重做时重复记录状
 
 // 用于跟踪滑块是否正在被拖动
 boolean isSliderDragging = false;
-
-boolean showGrowthVectors = false;
-boolean showMotherCurve = false;
 
 // 参数集列表
 ArrayList<ParameterSet> parameterSets = new ArrayList<ParameterSet>();
@@ -190,35 +189,12 @@ void draw() {
     }
   }
 
-  boolean shouldDrawVectors = showGrowthVectors;
-  boolean shouldDrawMotherCurve = showMotherCurve;
-  if (shouldDrawVectors || shouldDrawMotherCurve) {
-    hint(DISABLE_DEPTH_TEST);
-    if (shouldDrawMotherCurve) {
-      drawCenter();
-    }
-    if (shouldDrawVectors) {
-      drawReferenceVectors();
-    }
-    hint(ENABLE_DEPTH_TEST);
-  }
   popMatrix();
 
   drawInterface();
   drawControlInterface();
   updateShapeFromControlVertices();
   
-  // 显示串口状态信息
-  drawSerialStatus();
-}
-
-void controlEvent(ControlEvent event) {
-  if (checkboxReferenceVectors != null && event.isFrom(checkboxReferenceVectors)) {
-    updateReferenceVisibility();
-  }
-  if (checkboxMotherCurve != null && event.isFrom(checkboxMotherCurve)) {
-    updateMotherCurveVisibility();
-  }
 }
 
 void mousePressed() {
@@ -235,13 +211,7 @@ void mousePressed() {
     isDragging = true;
   }
 
-  isDraggingControlVertex = false;
-  for (int i = 0; i < controlVertices.length; i++) {
-    if (dist(mouseX, mouseY, controlVertices[i].x, controlVertices[i].y) < 10) {
-      dragging[i] = true;
-      isDraggingControlVertex = true;
-    }
-  }
+  isDraggingControlVertex = false; // 顶点控制已禁用
 }
 
 void mouseDragged() {
@@ -259,12 +229,6 @@ void mouseDragged() {
     panY += dy;
     lastMouseX = mouseX;
     lastMouseY = mouseY;
-  }
-
-  for (int i = 0; i < controlVertices.length; i++) {
-    if (dragging[i]) {
-      controlVertices[i].set(mouseX, mouseY);
-    }
   }
 }
 
@@ -289,11 +253,11 @@ void mouseWheel(MouseEvent event) {
 
 void setupInterface() {
   // 创建参数组
-  parametersGroup = cp5.addGroup("Parameters")
+  parametersGroup = cp5.addGroup("Basic Parameters")
     .setPosition(20, 25)
     .setWidth(280)
     .setBackgroundColor(color(0, 0, 0, 20))
-    .setBackgroundHeight(460)
+    .setBackgroundHeight(420)
     .setLabel("Parameters");
 
   int yPos = 10;
@@ -457,28 +421,7 @@ void setupInterface() {
     .moveTo(parametersGroup);
 
   yPos += yStep * 3;  // 为三个单选项留出空间
-
-  checkboxReferenceVectors = cp5.addCheckBox("Reference Vectors")
-    .setPosition(10, yPos)
-    .setSize(18, 18)
-    .setItemsPerRow(1)
-    .setSpacingRow(6)
-    .setSpacingColumn(100)
-    .addItem("Growth Vector", 0)
-    .moveTo(parametersGroup);
-  checkboxReferenceVectors.deactivateAll();
-  updateReferenceVisibility();
-  checkboxMotherCurve = cp5.addCheckBox("Mother Curve Toggle")
-    .setPosition(150, yPos)
-    .setSize(18, 18)
-    .setItemsPerRow(1)
-    .setSpacingRow(6)
-    .setSpacingColumn(100)
-    .addItem("Mother Curve", 0)
-    .moveTo(parametersGroup);
-  checkboxMotherCurve.deactivateAll();
-  updateMotherCurveVisibility();
-  yPos += yStep;
+  //yPos += yStep; // 额外的间距，使后续按钮与单选项分隔开
 
   // 添加重置和保存按钮
   resetButton = cp5.addButton("Reset")
@@ -576,7 +519,58 @@ void setupInterface() {
       }
     });
 
-  yPos += yStep + 75;
+  // 开口形状控制组
+  yPos += 85;
+  openingShapeGroup = cp5.addGroup("Opening Shape")
+    .setPosition(20, yPos)
+    .setWidth(280)
+    .setBackgroundColor(color(0, 0, 0, 20))
+    .setBackgroundHeight(90)
+    .setLabel("Opening Shape");
+
+  int yOpeningPos = 10;
+
+  sliderOpeningFlatten = cp5.addSlider("Opening Flatten")
+    .setPosition(10, yOpeningPos)
+    .setSize(200, 20)
+    .setRange(0, 1)
+    .setValue(openingFlatten)
+    .setDecimalPrecision(2)
+    .moveTo(openingShapeGroup)
+    .onRelease(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        saveState();
+        isSliderDragging = false;
+      }
+    })
+    .onPress(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        isSliderDragging = true;
+      }
+    });
+
+  yOpeningPos += yStep;
+
+  sliderOpeningRotation = cp5.addSlider("Opening Rotation")
+    .setPosition(10, yOpeningPos)
+    .setSize(200, 20)
+    .setRange(-180, 180)
+    .setValue(openingRotationDeg)
+    .setDecimalPrecision(1)
+    .moveTo(openingShapeGroup)
+    .onRelease(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        saveState();
+        isSliderDragging = false;
+      }
+    })
+    .onPress(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        isSliderDragging = true;
+      }
+    });
+
+  yPos += openingShapeGroup.getBackgroundHeight() + 20;
 
   // 创建导出组
   exportGroup = cp5.addGroup("Export")
@@ -639,6 +633,8 @@ void resetParameters() {
     initSVL = 3.0;  // 30/10 因为界面值要除以10
     sideShift = 0;
     shellThickness = 1;
+    openingFlatten = 0;
+    openingRotationDeg = 0;
     
     // 重置当前参数集索引
     currentParameterSetIndex = -1;
@@ -654,10 +650,14 @@ void resetParameters() {
     sliderConeWidth.setValue(30);   // Cone Width
     sliderSideShift.setValue(0);    // Side Shift
     sliderThickness.setValue(1);    // Thickness
+    sliderOpeningFlatten.setValue(0);
+    sliderOpeningRotation.setValue(0);
     
     // 设置下拉菜单显示"New Parameter"
     cp5.getController("Parameter Sets").setCaptionLabel("New Parameter");
     
+    // 更新截面形状
+    updateShapeFromControlVertices();
     // 重置向量
     resetVectors();
 }
@@ -897,78 +897,6 @@ PVector rotation(PVector a, PVector b, float angle) {
     (b.z * b.x * (1 - cosAngle) - b.y * sinAngle) * a.x + (b.y * b.z * (1 - cosAngle) + b.x * sinAngle) * a.y + (cosAngle + b.z * b.z * (1 - cosAngle)) * a.z
   );
   return result;
-}
-
-// 修改drawCenter方法来显示中心线
-void drawCenter() {
-  float strokeWeightValue = max(1.0f, 1.8f / zoom); // 保持缩放一致的线条宽度
-  
-  // 绘制原始生长路径
-  stroke(220, 60, 60);  // 红色显示母曲线
-  strokeWeight(strokeWeightValue);
-  int ringCount = getVisibleRingCount();
-  for (int i = 0; i < ringCount - 1; i++) {
-    connectVector(CV[i], CV[i + 1]);
-  }
-}
-
-void drawReferenceVectors() {
-  if (!showGrowthVectors) {
-    return;
-  }
-
-  float lineStroke = max(1.0f, 2.0f / zoom);
-  float arrowHeadSize = max(4.0f, 8.0f / zoom);
-  int growthColor = color(70, 140, 255);
-
-  int ringCount = getVisibleRingCount();
-  for (int i = 0; i < ringCount; i++) {
-    PVector center = CV[i];
-    if (center == null) {
-      continue;
-    }
-
-    PVector direction = normGV[i];
-    float magnitude = GVLength[i];
-    drawVectorArrow(center, direction, magnitude, growthColor, lineStroke, arrowHeadSize);
-  }
-
-  strokeWeight(1);
-}
-
-void drawVectorArrow(PVector origin, PVector direction, float magnitude, int colorValue, float lineStroke, float arrowHeadSize) {
-  if (direction == null) {
-    return;
-  }
-
-  PVector dir = direction.copy();
-  if (dir.magSq() < 1e-6f) {
-    return;
-  }
-
-  dir.normalize();
-  float length = max(5f, min(60f, magnitude * 1.25f));
-  PVector end = PVector.add(origin, PVector.mult(dir, length));
-
-  stroke(colorValue);
-  strokeWeight(lineStroke);
-  line(origin.x, origin.y, origin.z, end.x, end.y, end.z);
-
-  // draw arrowhead (two short lines forming a V)
-  PVector reference = new PVector(0, 0, 1);
-  PVector perpendicular = dir.cross(reference);
-  if (perpendicular.magSq() < 1e-6f) {
-    reference.set(0, 1, 0);
-    perpendicular = dir.cross(reference);
-  }
-  perpendicular.normalize();
-  PVector side = PVector.mult(perpendicular, arrowHeadSize * 0.6f);
-  PVector back = PVector.mult(dir, -arrowHeadSize);
-  PVector left = PVector.add(end, PVector.add(back, side));
-  PVector right = PVector.add(end, PVector.sub(back, side));
-
-  line(end.x, end.y, end.z, left.x, left.y, left.z);
-  line(end.x, end.y, end.z, right.x, right.y, right.z);
 }
 
 void drawOpenRings() {
@@ -1226,39 +1154,22 @@ void configureShellShader() {
   shellShader.set("uInteriorFactor", 0.0f);
 }
 
-void connectVector(PVector a, PVector b) {
-  beginShape(LINES);
-  vertex(a.x, a.y, a.z);
-  vertex(b.x, b.y, b.z);
-  endShape();
-}
-
 PVector getControlCenter() {
   return new PVector(width - 100, 100);
 }
 
 void setupControlVertices() {
-  float angleStep = TWO_PI / vertexCount;
-  float controlRadius = 50;
-  float centerX = width - 100;
-  float centerY = 100;
-
   for (int i = 0; i < vertexCount; i++) {
-    float angle = i * angleStep;
-    float px = centerX + cos(angle) * controlRadius;
-    float py = centerY + sin(angle) * controlRadius;
-
     if (controlVertices[i] == null) {
       controlVertices[i] = new PVector();
     }
-    controlVertices[i].set(px, py);
 
     if (shape[i] == null) {
       shape[i] = new PVector();
     }
-    shape[i].x = controlRadius / 50f;
-    shape[i].y = angle;
   }
+
+  updateShapeFromControlVertices();
 }
 
 void drawControlInterface() {
@@ -1289,11 +1200,28 @@ void drawControlInterface() {
 
 void updateShapeFromControlVertices() {
   PVector center = getControlCenter();
+  float aspectRatio = lerp(1.0f, 0.2f, constrain(openingFlatten, 0, 1));
+  float rotationRad = radians(openingRotationDeg);
+  float cosRot = cos(rotationRad);
+  float sinRot = sin(rotationRad);
+  float controlRadius = 50;
+  float angleStep = TWO_PI / max(vertexCount, 1);
+
   for (int i = 0; i < controlVertices.length; i++) {
-    PVector controlVertex = controlVertices[i];
-    float distance = PVector.dist(controlVertex, center);
-    shape[i].x = distance / 50; // 根据与中心的距离更新形状半径
-    shape[i].y = atan2(controlVertex.y - center.y, controlVertex.x - center.x); // 根据控制顶点位置更新角度
+    float baseAngle = i * angleStep;
+    float x = cos(baseAngle) * controlRadius;
+    float y = sin(baseAngle) * controlRadius;
+
+    y *= aspectRatio; // 扁平化，minor axis = aspectRatio
+
+    float xr = x * cosRot - y * sinRot;
+    float yr = x * sinRot + y * cosRot;
+
+    float scaledRadius = sqrt(xr * xr + yr * yr) / controlRadius;
+    shape[i].x = scaledRadius;
+    shape[i].y = atan2(yr, xr);
+
+    controlVertices[i].set(center.x + xr, center.y + yr);
   }
 }
 
@@ -1327,6 +1255,8 @@ ParameterSet saveParametersToXML() {
         paramSet.addChild("InitSVL").setContent(Float.toString(initSVL));
         paramSet.addChild("SideShift").setContent(Float.toString(sideShift));
         paramSet.addChild("ShellThickness").setContent(Float.toString(shellThickness));
+        paramSet.addChild("OpeningFlatten").setContent(Float.toString(openingFlatten));
+        paramSet.addChild("OpeningRotationDeg").setContent(Float.toString(openingRotationDeg));
 
         // 更新控制顶点
         XML controlVerticesXML = paramSet.addChild("ControlVertices");
@@ -1348,6 +1278,8 @@ ParameterSet saveParametersToXML() {
         currentPS.initSVL = initSVL;
         currentPS.sideShift = sideShift;
         currentPS.shellThickness = shellThickness;
+        currentPS.openingFlatten = openingFlatten;
+        currentPS.openingRotationDeg = openingRotationDeg;
         currentPS.controlVertices = new PVector[vertexCount];
         for (int i = 0; i < vertexCount; i++) {
           currentPS.controlVertices[i] = controlVertices[i].copy();
@@ -1372,6 +1304,8 @@ ParameterSet saveParametersToXML() {
   paramSet.addChild("InitSVL").setContent(Float.toString(initSVL));
   paramSet.addChild("SideShift").setContent(Float.toString(sideShift));
   paramSet.addChild("ShellThickness").setContent(Float.toString(shellThickness));
+  paramSet.addChild("OpeningFlatten").setContent(Float.toString(openingFlatten));
+  paramSet.addChild("OpeningRotationDeg").setContent(Float.toString(openingRotationDeg));
 
   // 添加控制顶点
   XML controlVerticesXML = paramSet.addChild("ControlVertices");
@@ -1395,6 +1329,8 @@ ParameterSet saveParametersToXML() {
   newPS.initSVL = initSVL;
   newPS.sideShift = sideShift;
   newPS.shellThickness = shellThickness;
+  newPS.openingFlatten = openingFlatten;
+  newPS.openingRotationDeg = openingRotationDeg;
   newPS.controlVertices = new PVector[vertexCount];
   for (int i = 0; i < vertexCount; i++) {
     newPS.controlVertices[i] = controlVertices[i].copy();
@@ -1447,6 +1383,14 @@ void loadParametersFromXML() {
 
       if (params.getChild("ShellThickness") != null) {
         ps.shellThickness = Float.parseFloat(params.getChild("ShellThickness").getContent());
+      }
+
+      if (params.getChild("OpeningFlatten") != null) {
+        ps.openingFlatten = Float.parseFloat(params.getChild("OpeningFlatten").getContent());
+      }
+
+      if (params.getChild("OpeningRotationDeg") != null) {
+        ps.openingRotationDeg = Float.parseFloat(params.getChild("OpeningRotationDeg").getContent());
       }
 
       int loadedVertexCount = vertexCount;
@@ -1502,6 +1446,8 @@ void updateSliders() {
   sliderConeWidth.setValue(initSVL * 10);
   sliderSideShift.setValue(sideShift * 100);
   sliderThickness.setValue(shellThickness * 10);
+  sliderOpeningFlatten.setValue(openingFlatten);
+  sliderOpeningRotation.setValue(openingRotationDeg);
 }
 
 void updateDropdownParameterSets() {
@@ -1514,26 +1460,6 @@ void updateDropdownParameterSets() {
     if (currentParameterSetIndex == -1) {
         cp5.getController("Parameter Sets").setCaptionLabel("New Parameter");
     }
-}
-
-void updateReferenceVisibility() {
-  if (checkboxReferenceVectors == null) {
-    showGrowthVectors = false;
-    return;
-  }
-
-  Toggle item = checkboxReferenceVectors.getItem(0);
-  showGrowthVectors = item != null && item.getState();
-}
-
-void updateMotherCurveVisibility() {
-  if (checkboxMotherCurve == null) {
-    showMotherCurve = false;
-    return;
-  }
-
-  Toggle item = checkboxMotherCurve.getItem(0);
-  showMotherCurve = item != null && item.getState();
 }
 
 void applyParameterSet(ParameterSet ps) {
@@ -1551,6 +1477,8 @@ void applyParameterSet(ParameterSet ps) {
   initSVL = ps.initSVL;
   sideShift = ps.sideShift;
   shellThickness = ps.shellThickness;
+  openingFlatten = ps.openingFlatten;
+  openingRotationDeg = ps.openingRotationDeg;
 
   if (ps.controlVertices != null) {
     PVector[] sourceVertices;
@@ -1726,6 +1654,8 @@ void updateParametersFromSliders() {
   initSVL = 0.1f * sliderConeWidth.getValue();
   sideShift = 0.01f * sliderSideShift.getValue();
   shellThickness = 0.1f * sliderThickness.getValue();
+  openingFlatten = sliderOpeningFlatten.getValue();
+  openingRotationDeg = sliderOpeningRotation.getValue();
 }
 
 void saveState() {
@@ -1738,6 +1668,8 @@ void saveState() {
   currentState.initSVL = initSVL;
   currentState.sideShift = sideShift;
   currentState.shellThickness = shellThickness;
+  currentState.openingFlatten = openingFlatten;
+  currentState.openingRotationDeg = openingRotationDeg;
   currentState.vertexCount = vertexCount;
   currentState.controlVertices = new PVector[vertexCount];
   for (int i = 0; i < vertexCount; i++) {
@@ -1808,6 +1740,8 @@ void applyState(ShellState state) {
   initSVL = state.initSVL;
   sideShift = state.sideShift;
   shellThickness = state.shellThickness;
+  openingFlatten = state.openingFlatten;
+  openingRotationDeg = state.openingRotationDeg;
 
   if (state.vertexCount != vertexCount) {
     setVertexCount(state.vertexCount, false);
@@ -1817,8 +1751,8 @@ void applyState(ShellState state) {
     for (int i = 0; i < controlVertices.length && i < state.controlVertices.length; i++) {
       controlVertices[i].set(state.controlVertices[i]);
     }
-    updateShapeFromControlVertices();
   }
+  updateShapeFromControlVertices();
   resetVectors();
 
   updateSliders();
@@ -1832,6 +1766,8 @@ class ShellState {
   float initSVL;
   float sideShift;
   float shellThickness;
+  float openingFlatten;
+  float openingRotationDeg;
   PVector[] controlVertices;
   int vertexCount;
   
@@ -1849,6 +1785,8 @@ class ShellState {
       newState.initSVL = this.initSVL;
       newState.sideShift = this.sideShift;
       newState.shellThickness = this.shellThickness;
+      newState.openingFlatten = this.openingFlatten;
+      newState.openingRotationDeg = this.openingRotationDeg;
       newState.vertexCount = this.vertexCount;
       
       if (this.controlVertices != null) {
@@ -1877,6 +1815,8 @@ class ParameterSet {
     float initSVL;
     float sideShift;
     float shellThickness;
+    float openingFlatten;
+    float openingRotationDeg;
     PVector[] controlVertices;
     
     ParameterSet copy() {
@@ -1890,6 +1830,8 @@ class ParameterSet {
         newPS.initSVL = this.initSVL;
         newPS.sideShift = this.sideShift;
         newPS.shellThickness = this.shellThickness;
+        newPS.openingFlatten = this.openingFlatten;
+        newPS.openingRotationDeg = this.openingRotationDeg;
         
         if (this.controlVertices != null) {
             newPS.controlVertices = new PVector[this.controlVertices.length];
@@ -1916,6 +1858,8 @@ void updateCurrentParameterSet() {
         currentPS.initSVL = initSVL;
         currentPS.sideShift = sideShift;
         currentPS.shellThickness = shellThickness;
+        currentPS.openingFlatten = openingFlatten;
+        currentPS.openingRotationDeg = openingRotationDeg;
         currentPS.vertexCount = vertexCount;
         
         // 更新控制顶点
@@ -2027,6 +1971,8 @@ void saveParameterSetToXML(ParameterSet ps, int index) {
     paramSet.addChild("InitSVL").setContent(Float.toString(ps.initSVL));
     paramSet.addChild("SideShift").setContent(Float.toString(ps.sideShift));
     paramSet.addChild("ShellThickness").setContent(Float.toString(ps.shellThickness));
+    paramSet.addChild("OpeningFlatten").setContent(Float.toString(ps.openingFlatten));
+    paramSet.addChild("OpeningRotationDeg").setContent(Float.toString(ps.openingRotationDeg));
 
     XML controlVerticesXML = paramSet.addChild("ControlVertices");
     PVector[] vertices = ps.controlVertices;
@@ -2147,39 +2093,4 @@ void applyIncrementalControl(int bendingDelta, int twistingDelta, int coneWidthD
     // 更新参数并重新计算
     updateParametersFromSliders();
     resetVectors();
-}
-
-// 添加串口状态显示方法
-void drawSerialStatus() {
-  pushMatrix();
-  pushStyle();
-  
-  // 重置变换
-  resetMatrix();
-  
-  // 设置文本样式
-  textAlign(LEFT, TOP);
-  textSize(12);
-  fill(255);
-  stroke(0);
-  strokeWeight(1);
-  
-  int yPos = 10;
-  int xPos = width - 200;
-  
-  // 显示控制串口状态
-  if (controlPort != null) {
-    text("Control Port: Connected", xPos, yPos);
-    text("Last Control: " + controlData, xPos, yPos + 15);
-  } else {
-    text("Control Port: Disconnected", xPos, yPos);
-  }
-  
-  // 显示当前参数值
-  text("Bending: " + nf(bendAngle, 0, 3), xPos, yPos + 40);
-  text("Twisting: " + nf(twistAngle, 0, 3), xPos, yPos + 55);
-  text("Cone Width: " + nf(initSVL, 0, 2), xPos, yPos + 70);
-  
-  popStyle();
-  popMatrix();
 }
