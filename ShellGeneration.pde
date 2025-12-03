@@ -36,6 +36,7 @@ void setup() {
 void draw() {
   processSerial();
 
+  int renderMode = (radio != null) ? (int)radio.getValue() : 1;
   drawBackgroundGradient();
   
   // 默认光照会在每帧被重置，补回灯光以获得与旧版相同的明暗效果
@@ -57,18 +58,12 @@ void draw() {
   rotateX(rotX);
   rotateY(rotY);
 
-  if (radio.getValue() == 1) {
+  if (renderMode == 1) {
     drawOpenRings();
-  } else if (radio.getValue() == 2) {  // Show Shell Surface
+  } else if (renderMode == 2) {  // Show Shell Surface
     drawWireSurface();  // 现在显示线框表面
   } else {  // Show Surface (值为3)
-    if (shellShader != null) {
-      shader(shellShader);
-      drawSurface();      // 现在显示实体表面
-      resetShader();
-    } else {
-      drawSurface();
-    }
+    drawSurface();      // 现在显示实体表面（经典模式）
   }
 
   popMatrix();
@@ -244,13 +239,12 @@ void drawSurface() {
   }
 
   pushStyle();
+  float strokeWeightValue = 0.5f / max(zoom, 0.0001f);
+  strokeWeight(strokeWeightValue);
+  fill(200);
   noStroke();
-  fill(248, 246, 242);
 
-  // 绘制外表面
-  if (shellShader != null) {
-    shellShader.set("uInteriorFactor", 0.0f);
-  }
+  // 绘制外表面（经典模式）
   for (int i = 0; i < ringCount - 1; i++) {
     for (int j = 0; j < vertexCount; j++) {
       int nextJ = (j + 1) % vertexCount;
@@ -258,19 +252,16 @@ void drawSurface() {
       PVector outer10 = getAnimatedOuterPoint(i + 1, j);
       PVector outer11 = getAnimatedOuterPoint(i + 1, nextJ);
       PVector outer01 = getAnimatedOuterPoint(i, nextJ);
-      beginShape(QUADS);
-      emitVertexWithNormal(outer00, outerNormals[i][j]);
-      emitVertexWithNormal(outer10, outerNormals[i + 1][j]);
-      emitVertexWithNormal(outer11, outerNormals[i + 1][nextJ]);
-      emitVertexWithNormal(outer01, outerNormals[i][nextJ]);
+      beginShape();
+      vertex(outer00.x, outer00.y, outer00.z);
+      vertex(outer10.x, outer10.y, outer10.z);
+      vertex(outer11.x, outer11.y, outer11.z);
+      vertex(outer01.x, outer01.y, outer01.z);
       endShape(CLOSE);
     }
   }
 
   // 绘制内表面
-  if (shellShader != null) {
-    shellShader.set("uInteriorFactor", 1.0f);
-  }
   for (int i = 0; i < ringCount - 1; i++) {
     for (int j = 0; j < vertexCount; j++) {
       int nextJ = (j + 1) % vertexCount;
@@ -278,69 +269,60 @@ void drawSurface() {
       PVector inner01 = getAnimatedInnerPoint(i, nextJ);
       PVector inner11 = getAnimatedInnerPoint(i + 1, nextJ);
       PVector inner10 = getAnimatedInnerPoint(i + 1, j);
-      beginShape(QUADS);
-      emitVertexWithNormal(inner00, innerNormals[i][j]);
-      emitVertexWithNormal(inner01, innerNormals[i][nextJ]);
-      emitVertexWithNormal(inner11, innerNormals[i + 1][nextJ]);
-      emitVertexWithNormal(inner10, innerNormals[i + 1][j]);
+      beginShape();
+      vertex(inner00.x, inner00.y, inner00.z);
+      vertex(inner01.x, inner01.y, inner01.z);
+      vertex(inner11.x, inner11.y, inner11.z);
+      vertex(inner10.x, inner10.y, inner10.z);
       endShape(CLOSE);
     }
   }
 
   // 绘制侧面
-  if (shellShader != null) {
-    shellShader.set("uInteriorFactor", 0.35f);
-  }
   for (int i = 0; i < ringCount; i++) {
     for (int j = 0; j < vertexCount; j++) {
       int nextJ = (j + 1) % vertexCount;
-      PVector n0 = computeSideNormal(i, j);
-      PVector n1 = computeSideNormal(i, nextJ);
       PVector outer0 = getAnimatedOuterPoint(i, j);
       PVector outer1 = getAnimatedOuterPoint(i, nextJ);
       PVector inner1 = getAnimatedInnerPoint(i, nextJ);
       PVector inner0 = getAnimatedInnerPoint(i, j);
-      beginShape(QUADS);
-      emitVertexWithNormal(outer0, n0);
-      emitVertexWithNormal(outer1, n1);
-      emitVertexWithNormal(inner1, n1);
-      emitVertexWithNormal(inner0, n0);
+      beginShape();
+      vertex(outer0.x, outer0.y, outer0.z);
+      vertex(outer1.x, outer1.y, outer1.z);
+      vertex(inner1.x, inner1.y, inner1.z);
+      vertex(inner0.x, inner0.y, inner0.z);
       endShape(CLOSE);
     }
   }
 
   // 绘制首端面
-  if (shellShader != null) {
-    shellShader.set("uInteriorFactor", 0.55f);
-  }
-  PVector frontNormal = computeCapNormal(0, true);
   for (int j = 0; j < vertexCount; j++) {
     int nextJ = (j + 1) % vertexCount;
     PVector outer0 = getAnimatedOuterPoint(0, j);
     PVector outer1 = getAnimatedOuterPoint(0, nextJ);
     PVector inner1 = getAnimatedInnerPoint(0, nextJ);
     PVector inner0 = getAnimatedInnerPoint(0, j);
-    beginShape(QUADS);
-    emitVertexWithNormal(outer0, frontNormal);
-    emitVertexWithNormal(outer1, frontNormal);
-    emitVertexWithNormal(inner1, frontNormal);
-    emitVertexWithNormal(inner0, frontNormal);
+    beginShape();
+    vertex(outer0.x, outer0.y, outer0.z);
+    vertex(outer1.x, outer1.y, outer1.z);
+    vertex(inner1.x, inner1.y, inner1.z);
+    vertex(inner0.x, inner0.y, inner0.z);
     endShape(CLOSE);
   }
 
   // 绘制尾端面
   int lastIndex = ringCount - 1;
-  if (shellShader != null) {
-    shellShader.set("uInteriorFactor", 0.45f);
-  }
-  PVector backNormal = computeCapNormal(lastIndex, false);
   for (int j = 0; j < vertexCount; j++) {
     int nextJ = (j + 1) % vertexCount;
-    beginShape(QUADS);
-    emitVertexWithNormal(getAnimatedOuterPoint(lastIndex, j), backNormal);
-    emitVertexWithNormal(getAnimatedOuterPoint(lastIndex, nextJ), backNormal);
-    emitVertexWithNormal(getAnimatedInnerPoint(lastIndex, nextJ), backNormal);
-    emitVertexWithNormal(getAnimatedInnerPoint(lastIndex, j), backNormal);
+    PVector outer0 = getAnimatedOuterPoint(lastIndex, j);
+    PVector outer1 = getAnimatedOuterPoint(lastIndex, nextJ);
+    PVector inner1 = getAnimatedInnerPoint(lastIndex, nextJ);
+    PVector inner0 = getAnimatedInnerPoint(lastIndex, j);
+    beginShape();
+    vertex(outer0.x, outer0.y, outer0.z);
+    vertex(outer1.x, outer1.y, outer1.z);
+    vertex(inner1.x, inner1.y, inner1.z);
+    vertex(inner0.x, inner0.y, inner0.z);
     endShape(CLOSE);
   }
 
