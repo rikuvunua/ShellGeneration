@@ -9,15 +9,20 @@ void resetVectors() {
     SVLength[i] = initSVL * pow(growthRate, i);
   }
 
-  // 基础向量（与 JS 版本一致）
-  GV[0] = PVector.mult(normGV[0], GVLength[0]);
-  SV[0] = PVector.mult(normSV[0], SVLength[0]);
-  CV[0] = GV[0].copy();
+  // 保持起始环为一个点（与原版保持一致，用于封闭壳体起点）
+  if (GV[0] == null) GV[0] = new PVector();
+  if (SV[0] == null) SV[0] = new PVector();
+  if (CV[0] == null) CV[0] = new PVector();
+  GV[0].set(0, 0, 0);
+  SV[0].set(0, 0, 0);
+  CV[0].set(0, 0, 0);
   
   for (int i = 1; i < numberOfStepGrowth; i++) {
-    normGV[i] = rotation(normGV[i-1], normSV[i-1], bendAngle);
+    // 同时反向弯曲与扭转，让贝壳右旋且保持正向朝上
+    normGV[i] = rotation(normGV[i-1], normSV[i-1], -bendAngle);
     normGV[i].normalize();
-    normSV[i] = rotation(normSV[i-1], normGV[i], twistAngle);
+    // 取负号让截面旋转方向变为右旋
+    normSV[i] = rotation(normSV[i-1], normGV[i], -twistAngle);
     normSV[i].normalize();
     
     GV[i] = PVector.mult(normGV[i], GVLength[i]);

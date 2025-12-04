@@ -86,54 +86,112 @@ void export3DModel() {
     exportFaces.add(new int[]{v1, v3, v4});
   }
 
-  writeOBJFile();
+  writeSTLFile();
 }
 
-void writeOBJFile() {
-  // 确定保存OBJ文件的目录
-  String dirPath = sketchPath("models/obj/");
+void writeSTLFile() {
+  String dirPath = sketchPath("models/stl/");
   File dir = new File(dirPath);
   if (!dir.exists()) {
-    dir.mkdirs(); // 如果目录不存在，则创建
+    dir.mkdirs();
   }
 
-  // 获取目中已有的OBJ文件，匹配"shell_model_*.obj"模式
+  // 获取已有的STL文件，匹配"shell_model_*.stl"模式
   String[] fileNames = dir.list();
   int maxNumber = 0;
-  for (String name : fileNames) {
-    if (name.startsWith("shell_model_") && name.endsWith(".obj")) {
-      // 提取编号部分
-      String numberStr = name.substring("shell_model_".length(), name.length() - 4); // 去除前缀和".obj"
-      try {
-        int number = Integer.parseInt(numberStr);
-        if (number > maxNumber) {
-          maxNumber = number;
+  if (fileNames != null) {
+    for (String name : fileNames) {
+      if (name.startsWith("shell_model_") && name.endsWith(".stl")) {
+        String numberStr = name.substring("shell_model_".length(), name.length() - 4);
+        try {
+          int number = Integer.parseInt(numberStr);
+          if (number > maxNumber) {
+            maxNumber = number;
+          }
+        } catch (NumberFormatException e) {
+          // 忽略不符合命名规则的文件
         }
-      } catch (NumberFormatException e) {
-        // 忽略不符合命名规则的文件
       }
     }
   }
   int nextNumber = maxNumber + 1;
-  // 格式化编号确保有两位数，如"01"
   String numberStr = String.format("%02d", nextNumber);
 
-  // 构建文件路径
-  String filePath = dirPath + "shell_model_" + numberStr + ".obj";
-  PrintWriter output = createWriter(filePath);
+  String filePath = dirPath + "shell_model_" + numberStr + ".stl";
 
-  // 写入顶点
-  for (PVector v : exportVertices) {
-    output.println("v " + v.x + " " + v.y + " " + v.z);
+  try {
+    BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(filePath));
+
+    byte[] header = new byte[80];
+    byte[] label = "ShellGeneration STL".getBytes();
+    System.arraycopy(label, 0, header, 0, min(label.length, header.length));
+    output.write(header);
+
+    output.write(intToLittleEndian(exportFaces.size()));
+
+    for (int[] face : exportFaces) {
+      writeTriangle(output, face);
+    }
+
+    output.flush();
+    output.close();
+    println("3D模型已导出到 " + filePath);
+  } catch (IOException e) {
+    println("导出STL失败: " + e.getMessage());
+    e.printStackTrace();
   }
+}
 
-  // 写入面
-  for (int[] face : exportFaces) {
-    // 注意：OBJ索引从1开始
-    output.println("f " + (face[0] + 1) + " " + (face[1] + 1) + " " + (face[2] + 1));
+void writeTriangle(BufferedOutputStream output, int[] face) throws IOException {
+  // 旋转到 Y-up 视图并镜像 X 轴，让导出保持右旋；镜像会反转三角形朝向，因此写出时交换 v2/v3 保持外法线
+  PVector v1 = transformForExport(exportVertices.get(face[0]));
+  PVector v2 = transformForExport(exportVertices.get(face[1]));
+  PVector v3 = transformForExport(exportVertices.get(face[2]));
+
+  PVector normal = computeFaceNormal(v1, v3, v2); // 使用交换后的顺序得到正确的外法线
+
+  ByteBuffer buffer = ByteBuffer.allocate(50).order(ByteOrder.LITTLE_ENDIAN);
+  buffer.putFloat(normal.x);
+  buffer.putFloat(normal.y);
+  buffer.putFloat(normal.z);
+
+  buffer.putFloat(v1.x);
+  buffer.putFloat(v1.y);
+  buffer.putFloat(v1.z);
+
+  buffer.putFloat(v3.x);
+  buffer.putFloat(v3.y);
+  buffer.putFloat(v3.z);
+
+  buffer.putFloat(v2.x);
+  buffer.putFloat(v2.y);
+  buffer.putFloat(v2.z);
+
+  buffer.putShort((short)0);
+
+  output.write(buffer.array());
+}
+
+byte[] intToLittleEndian(int value) {
+  ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+  buffer.putInt(value);
+  return buffer.array();
+}
+
+PVector computeFaceNormal(PVector v1, PVector v2, PVector v3) {
+  PVector edge1 = PVector.sub(v2, v1, null);
+  PVector edge2 = PVector.sub(v3, v1, null);
+  PVector normal = PVector.cross(edge1, edge2, null);
+  float magSq = normal.magSq();
+  if (magSq > 0) {
+    normal.mult(1.0f / sqrt(magSq));
+  } else {
+    normal.set(0, 0, 0);
   }
+  return normal;
+}
 
-  output.flush();
-  output.close();
-
+PVector transformForExport(PVector v) {
+  // 旋转 180° around X (y、z 取反) 并镜像 X，以匹配常见 STL 预览的朝上与右旋方向
+  return new PVector(-v.x, -v.y, -v.z);
 }

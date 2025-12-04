@@ -363,9 +363,10 @@ void setupInterface() {
   yExportPos += yStep;
 
   // Export按钮
-  cp5.addButton("ExportOBJ")
+  cp5.addButton("ExportSTL")
     .setPosition(10, yExportPos)
     .setSize(200, 30)
+    .setLabel("Export STL")
     .moveTo(exportGroup)
     .onClick(new CallbackListener() {
       public void controlEvent(CallbackEvent event) {
