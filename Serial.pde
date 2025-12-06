@@ -24,16 +24,16 @@ void processSerial() {
       controlData = trim(inString);
       println("Control Data Received: " + controlData);
       
-      // 解析控制数据 "bending,twisting,coneWidth"
+      // 解析控制数据 "bending,twisting,growthRateDelta"
       String[] values = split(controlData, ',');
       if (values.length == 3) {
         try {
           int bendingDelta = int(values[0]);
           int twistingDelta = int(values[1]);
-          int coneWidthDelta = int(values[2]);
+          int growthRateDelta = int(values[2]);
           
           // 应用增量控制
-          applyIncrementalControl(bendingDelta, twistingDelta, coneWidthDelta);
+          applyIncrementalControl(bendingDelta, twistingDelta, growthRateDelta);
           
         } catch (NumberFormatException e) {
           println("Error parsing control data: " + controlData);

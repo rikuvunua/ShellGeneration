@@ -26,18 +26,11 @@ ParameterSet saveParametersToXML() {
         paramSet.addChild("TwistAngle").setContent(Float.toString(twistAngle));
         paramSet.addChild("InitGVL").setContent(Float.toString(initGVL));
         paramSet.addChild("InitSVL").setContent(Float.toString(initSVL));
+        paramSet.addChild("GrowthRate").setContent(Float.toString(growthRate));
         paramSet.addChild("SideShift").setContent(Float.toString(sideShift));
         paramSet.addChild("ShellThickness").setContent(Float.toString(shellThickness));
         paramSet.addChild("OpeningFlatten").setContent(Float.toString(openingFlatten));
         paramSet.addChild("OpeningRotationDeg").setContent(Float.toString(openingRotationDeg));
-
-        // 更新控制顶点
-        XML controlVerticesXML = paramSet.addChild("ControlVertices");
-        for (int i = 0; i < controlVertices.length; i++) {
-          XML vertexXML = controlVerticesXML.addChild("Vertex");
-          vertexXML.addChild("X").setContent(Float.toString(controlVertices[i].x));
-          vertexXML.addChild("Y").setContent(Float.toString(controlVertices[i].y));
-        }
         
         saveXML(xml, filePath);
         
@@ -49,6 +42,7 @@ ParameterSet saveParametersToXML() {
         currentPS.twistAngle = twistAngle;
         currentPS.initGVL = initGVL;
         currentPS.initSVL = initSVL;
+        currentPS.growthRate = growthRate;
         currentPS.sideShift = sideShift;
         currentPS.shellThickness = shellThickness;
         currentPS.openingFlatten = openingFlatten;
@@ -75,18 +69,11 @@ ParameterSet saveParametersToXML() {
   paramSet.addChild("TwistAngle").setContent(Float.toString(twistAngle));
   paramSet.addChild("InitGVL").setContent(Float.toString(initGVL));
   paramSet.addChild("InitSVL").setContent(Float.toString(initSVL));
+  paramSet.addChild("GrowthRate").setContent(Float.toString(growthRate));
   paramSet.addChild("SideShift").setContent(Float.toString(sideShift));
   paramSet.addChild("ShellThickness").setContent(Float.toString(shellThickness));
   paramSet.addChild("OpeningFlatten").setContent(Float.toString(openingFlatten));
   paramSet.addChild("OpeningRotationDeg").setContent(Float.toString(openingRotationDeg));
-
-  // 添加控制顶点
-  XML controlVerticesXML = paramSet.addChild("ControlVertices");
-  for (int i = 0; i < controlVertices.length; i++) {
-    XML vertexXML = controlVerticesXML.addChild("Vertex");
-    vertexXML.addChild("X").setContent(Float.toString(controlVertices[i].x));
-    vertexXML.addChild("Y").setContent(Float.toString(controlVertices[i].y));
-  }
   
   // 保存XML文件
   saveXML(xml, filePath);
@@ -100,14 +87,13 @@ ParameterSet saveParametersToXML() {
   newPS.twistAngle = twistAngle;
   newPS.initGVL = initGVL;
   newPS.initSVL = initSVL;
+  newPS.growthRate = growthRate;
   newPS.sideShift = sideShift;
   newPS.shellThickness = shellThickness;
   newPS.openingFlatten = openingFlatten;
   newPS.openingRotationDeg = openingRotationDeg;
-  newPS.controlVertices = new PVector[vertexCount];
-  for (int i = 0; i < vertexCount; i++) {
-    newPS.controlVertices[i] = controlVertices[i].copy();
-  }
+  // 控制顶点不再保存到 XML，保持内存使用默认形状
+  newPS.controlVertices = createDefaultControlVertices(vertexCount);
   
   return newPS;
 }
@@ -150,6 +136,12 @@ void loadParametersFromXML() {
         ps.initSVL = Float.parseFloat(params.getChild("InitSVL").getContent());
       }
 
+      if (params.getChild("GrowthRate") != null) {
+        ps.growthRate = Float.parseFloat(params.getChild("GrowthRate").getContent());
+      } else {
+        ps.growthRate = growthRate;
+      }
+
       if (params.getChild("SideShift") != null) {
         ps.sideShift = Float.parseFloat(params.getChild("SideShift").getContent());
       }
@@ -171,29 +163,9 @@ void loadParametersFromXML() {
         loadedVertexCount = constrain(Integer.parseInt(params.getChild("VertexCount").getContent()), MIN_VERTEX_COUNT, MAX_VERTEX_COUNT);
       }
 
-      XML controlVerticesXML = params.getChild("ControlVertices");
-      if (controlVerticesXML != null) {
-        XML[] vertices = controlVerticesXML.getChildren("Vertex");
-        PVector[] loadedVertices = new PVector[vertices.length];
-        for (int i = 0; i < vertices.length; i++) {
-          float x = Float.parseFloat(vertices[i].getChild("X").getContent());
-          float y = Float.parseFloat(vertices[i].getChild("Y").getContent());
-          loadedVertices[i] = new PVector(x, y);
-        }
-
-        if (loadedVertexCount <= 0) {
-          loadedVertexCount = constrain(vertices.length, MIN_VERTEX_COUNT, MAX_VERTEX_COUNT);
-        }
-
-        if (loadedVertices.length == loadedVertexCount) {
-          ps.controlVertices = loadedVertices;
-        } else {
-          ps.controlVertices = resampleControlVertices(loadedVertices, loadedVertexCount);
-        }
-      } else {
-        loadedVertexCount = max(loadedVertexCount, MIN_VERTEX_COUNT);
-        ps.controlVertices = createDefaultControlVertices(loadedVertexCount);
-      }
+      // 不再从 XML 读取控制顶点，使用默认或现有数量
+      loadedVertexCount = max(loadedVertexCount, MIN_VERTEX_COUNT);
+      ps.controlVertices = createDefaultControlVertices(loadedVertexCount);
 
       ps.vertexCount = ps.controlVertices != null ? ps.controlVertices.length : loadedVertexCount;
       
@@ -221,6 +193,7 @@ void applyParameterSet(ParameterSet ps) {
   twistAngle = ps.twistAngle;
   initGVL = ps.initGVL;
   initSVL = ps.initSVL;
+  growthRate = ps.growthRate;
   sideShift = ps.sideShift;
   shellThickness = ps.shellThickness;
   openingFlatten = ps.openingFlatten;
@@ -259,19 +232,12 @@ void updateCurrentParameterSet() {
         currentPS.twistAngle = twistAngle;
         currentPS.initGVL = initGVL;
         currentPS.initSVL = initSVL;
+        currentPS.growthRate = growthRate;
         currentPS.sideShift = sideShift;
         currentPS.shellThickness = shellThickness;
         currentPS.openingFlatten = openingFlatten;
         currentPS.openingRotationDeg = openingRotationDeg;
         currentPS.vertexCount = vertexCount;
-        
-        // 更新控制顶点
-        if (currentPS.controlVertices == null || currentPS.controlVertices.length != vertexCount) {
-            currentPS.controlVertices = new PVector[vertexCount];
-        }
-        for (int i = 0; i < vertexCount; i++) {
-            currentPS.controlVertices[i] = controlVertices[i].copy();
-        }
         
         // 保存到XML文件
         saveParametersToXML();
@@ -372,23 +338,11 @@ void saveParameterSetToXML(ParameterSet ps, int index) {
     paramSet.addChild("TwistAngle").setContent(Float.toString(ps.twistAngle));
     paramSet.addChild("InitGVL").setContent(Float.toString(ps.initGVL));
     paramSet.addChild("InitSVL").setContent(Float.toString(ps.initSVL));
+    paramSet.addChild("GrowthRate").setContent(Float.toString(ps.growthRate));
     paramSet.addChild("SideShift").setContent(Float.toString(ps.sideShift));
     paramSet.addChild("ShellThickness").setContent(Float.toString(ps.shellThickness));
     paramSet.addChild("OpeningFlatten").setContent(Float.toString(ps.openingFlatten));
     paramSet.addChild("OpeningRotationDeg").setContent(Float.toString(ps.openingRotationDeg));
-
-    XML controlVerticesXML = paramSet.addChild("ControlVertices");
-    PVector[] vertices = ps.controlVertices;
-    if (vertices == null) {
-        vertices = createDefaultControlVertices(count);
-    } else if (vertices.length != count) {
-        vertices = resampleControlVertices(vertices, count);
-    }
-    for (int i = 0; i < vertices.length; i++) {
-        XML vertexXML = controlVerticesXML.addChild("Vertex");
-        vertexXML.addChild("X").setContent(Float.toString(vertices[i].x));
-        vertexXML.addChild("Y").setContent(Float.toString(vertices[i].y));
-    }
 
     saveXML(xml, filePath);
 }
@@ -401,6 +355,7 @@ class ParameterSet {
     float twistAngle;
     float initGVL;
     float initSVL;
+    float growthRate;
     float sideShift;
     float shellThickness;
     float openingFlatten;
@@ -416,6 +371,7 @@ class ParameterSet {
         newPS.twistAngle = this.twistAngle;
         newPS.initGVL = this.initGVL;
         newPS.initSVL = this.initSVL;
+        newPS.growthRate = this.growthRate;
         newPS.sideShift = this.sideShift;
         newPS.shellThickness = this.shellThickness;
         newPS.openingFlatten = this.openingFlatten;
@@ -438,6 +394,7 @@ void resetParameters() {
     numberOfStepGrowth = 50;
     bendAngle = 0.3;  // 60/200 因为界面值要除以200
     twistAngle = 0.05;  // 50/1000 因为界面值要除以1000
+    growthRate = 1.03;
     initGVL = 1.5;  // 60/40 因为界面值要除以40
     initSVL = 3.0;  // 30/10 因为界面值要除以10
     sideShift = 0;
@@ -453,10 +410,13 @@ void resetParameters() {
         sliderVertexCount.setValue(vertexCount);
     }
     sliderGrowthStep.setValue(50);  // Growth
+    if (sliderGrowthRate != null) {
+        sliderGrowthRate.setValue(growthRate);
+    }
     sliderBendAngle.setValue(60);   // Bending Angle
     sliderTwistAngle.setValue(50);  // Twisting Angle
-    sliderConeHight.setValue(60);   // Cone Height
-    sliderConeWidth.setValue(30);   // Cone Width
+    if (sliderConeHight != null) sliderConeHight.setValue(60);   // Cone Height
+    if (sliderConeWidth != null) sliderConeWidth.setValue(30);   // Cone Width
     sliderSideShift.setValue(0);    // Side Shift
     sliderThickness.setValue(1);    // Thickness
     sliderOpeningFlatten.setValue(0);

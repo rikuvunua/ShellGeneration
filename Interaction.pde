@@ -53,7 +53,7 @@ void mouseWheel(MouseEvent event) {
 }
 
 // 串口增量控制
-void applyIncrementalControl(int bendingDelta, int twistingDelta, int coneWidthDelta) {
+void applyIncrementalControl(int bendingDelta, int twistingDelta, int growthRateDelta) {
     // 保存当前状态用于撤销
     if (!isUndoingOrRedoing) {
         saveState();
@@ -62,7 +62,7 @@ void applyIncrementalControl(int bendingDelta, int twistingDelta, int coneWidthD
     // 应用bending angle增量
     if (bendingDelta != 0) {
         float currentBending = sliderBendAngle.getValue();
-        float newBending = constrain(currentBending + bendingDelta, -100, 100);
+        float newBending = constrain(currentBending + bendingDelta, 0, 100);
         sliderBendAngle.setValue(newBending);
         bendAngle = 0.005f * newBending;
         println("Bending angle changed by " + bendingDelta + " to " + newBending);
@@ -71,19 +71,21 @@ void applyIncrementalControl(int bendingDelta, int twistingDelta, int coneWidthD
     // 应用twisting angle增量
     if (twistingDelta != 0) {
         float currentTwisting = sliderTwistAngle.getValue();
-        float newTwisting = constrain(currentTwisting + (twistingDelta * 2), -200, 200);
+        float newTwisting = constrain(currentTwisting + (twistingDelta * 2), 0, 200);
         sliderTwistAngle.setValue(newTwisting);
         twistAngle = 0.001f * newTwisting;
         println("Twisting angle changed by " + (twistingDelta * 2) + " to " + newTwisting);
     }
     
-    // 应用cone width增量
-    if (coneWidthDelta != 0) {
-        float currentConeWidth = sliderConeWidth.getValue();
-        float newConeWidth = constrain(currentConeWidth + coneWidthDelta, 0, 100);
-        sliderConeWidth.setValue(newConeWidth);
-        initSVL = 0.1f * newConeWidth;
-        println("Cone width changed by " + coneWidthDelta + " to " + newConeWidth);
+    // 应用growth rate增量（UI 隐藏时直接调整变量）
+    if (growthRateDelta != 0) {
+        float base = sliderGrowthRate != null ? sliderGrowthRate.getValue() : growthRate;
+        float newGrowthRate = constrain(base + (growthRateDelta * 0.001f), 1.03f, 1.05f);
+        if (sliderGrowthRate != null) {
+          sliderGrowthRate.setValue(newGrowthRate);
+        }
+        growthRate = newGrowthRate;
+        println("Growth rate changed by " + (growthRateDelta * 0.001f) + " to " + nf(newGrowthRate, 0, 3));
     }
     
     // 更新参数并重新计算

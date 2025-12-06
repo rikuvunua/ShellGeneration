@@ -1,6 +1,6 @@
 ControlP5 cp5;
 RadioButton radio;
-Slider sliderVertexCount, sliderGrowthStep, sliderBendAngle, sliderTwistAngle, sliderConeHight, sliderConeWidth, sliderSideShift, sliderThickness;
+Slider sliderVertexCount, sliderGrowthStep, sliderGrowthRate, sliderBendAngle, sliderTwistAngle, sliderConeHight, sliderConeWidth, sliderSideShift, sliderThickness;
 Slider sliderOpeningFlatten, sliderOpeningRotation;
 Button resetButton, undoButton, redoButton;
 
@@ -17,7 +17,7 @@ void setupInterface() {
     .setPosition(20, 25)
     .setWidth(280)
     .setBackgroundColor(color(0, 0, 0, 20))
-    .setBackgroundHeight(420)
+    .setBackgroundHeight(460)
     .setLabel("Parameters");
 
   int yPos = 10;
@@ -66,10 +66,12 @@ void setupInterface() {
     });
   yPos += yStep;
 
+  // Growth Rate UI 隐藏
+
   sliderBendAngle = cp5.addSlider("Bending Angle")
     .setPosition(10, yPos)
     .setSize(200, 20)
-    .setRange(-100, 100)
+    .setRange(0, 100)
     .setValue(bendAngle * 200)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
@@ -88,7 +90,7 @@ void setupInterface() {
   sliderTwistAngle = cp5.addSlider("Twisting Angle")
     .setPosition(10, yPos)
     .setSize(200, 20)
-    .setRange(-200, 200)
+    .setRange(0, 200)
     .setValue(twistAngle * 1000)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
@@ -126,7 +128,7 @@ void setupInterface() {
   sliderConeWidth = cp5.addSlider("Cone Width")
     .setPosition(10, yPos)
     .setSize(200, 20)
-    .setRange(0, 100)
+    .setRange(20, 80)
     .setValue(initSVL * 10)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
@@ -391,6 +393,9 @@ void updateParametersFromSliders() {
   }
 
   numberOfStepGrowth = (int)sliderGrowthStep.getValue();
+  if (sliderGrowthRate != null) {
+    growthRate = sliderGrowthRate.getValue();
+  }
   bendAngle = 0.005f * sliderBendAngle.getValue();
   twistAngle = 0.001f * sliderTwistAngle.getValue();
   initGVL = 0.025f * sliderConeHight.getValue();
@@ -406,6 +411,9 @@ void updateSliders() {
     sliderVertexCount.setValue(vertexCount);
   }
   sliderGrowthStep.setValue(numberOfStepGrowth);
+  if (sliderGrowthRate != null) {
+    sliderGrowthRate.setValue(growthRate);
+  }
   sliderBendAngle.setValue(bendAngle * 200);
   sliderTwistAngle.setValue(twistAngle * 1000);
   sliderConeHight.setValue(initGVL * 40);
