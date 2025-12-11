@@ -2,11 +2,12 @@ ControlP5 cp5;
 RadioButton radio;
 Slider sliderVertexCount, sliderGrowthStep, sliderGrowthRate, sliderBendAngle, sliderTwistAngle, sliderConeHight, sliderConeWidth, sliderSideShift, sliderThickness;
 Slider sliderOpeningFlatten, sliderOpeningRotation;
+Slider sliderTwistGradient, sliderTwistWaveAmplitude, sliderTwistWaveFrequency, sliderTwistWavePhase;
 Button resetButton, undoButton, redoButton;
 
 DropdownList dropdownParameterSets;
 
-Group parametersGroup, openingShapeGroup, exportGroup;
+Group parametersGroup, openingShapeGroup, twistModGroup, exportGroup;
 
 // UI state
 boolean isSliderDragging = false;
@@ -334,6 +335,100 @@ void setupInterface() {
 
   yPos += openingShapeGroup.getBackgroundHeight() + 20;
 
+  // 扭转渐变叠波组
+  twistModGroup = cp5.addGroup("Twist Mod")
+    .setPosition(20, yPos)
+    .setWidth(280)
+    .setBackgroundColor(color(0, 0, 0, 20))
+    .setBackgroundHeight(140)
+    .setLabel("Twist Mod");
+
+  int yTwistPos = 10;
+
+  sliderTwistGradient = cp5.addSlider("Twist Gradient (deg/step)")
+    .setPosition(10, yTwistPos)
+    .setSize(200, 20)
+    .setRange(-1.0f, 1.0f)
+    .setValue(degrees(twistGradient))
+    .setDecimalPrecision(3)
+    .moveTo(twistModGroup)
+    .onRelease(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        saveState();
+        isSliderDragging = false;
+      }
+    })
+    .onPress(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        isSliderDragging = true;
+      }
+    });
+
+  yTwistPos += yStep;
+
+  sliderTwistWaveAmplitude = cp5.addSlider("Twist Wave Amp (deg)")
+    .setPosition(10, yTwistPos)
+    .setSize(200, 20)
+    .setRange(0, 10.0f)
+    .setValue(degrees(twistWaveAmplitude))
+    .setDecimalPrecision(3)
+    .moveTo(twistModGroup)
+    .onRelease(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        saveState();
+        isSliderDragging = false;
+      }
+    })
+    .onPress(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        isSliderDragging = true;
+      }
+    });
+
+  yTwistPos += yStep;
+
+  sliderTwistWaveFrequency = cp5.addSlider("Twist Wave Freq")
+    .setPosition(10, yTwistPos)
+    .setSize(200, 20)
+    .setRange(0, 2.0f)
+    .setValue(twistWaveFrequency)
+    .setDecimalPrecision(3)
+    .moveTo(twistModGroup)
+    .onRelease(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        saveState();
+        isSliderDragging = false;
+      }
+    })
+    .onPress(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        isSliderDragging = true;
+      }
+    });
+
+  yTwistPos += yStep;
+
+  sliderTwistWavePhase = cp5.addSlider("Twist Wave Phase")
+    .setPosition(10, yTwistPos)
+    .setSize(200, 20)
+    .setRange(0, TWO_PI)
+    .setValue(twistWavePhase)
+    .setDecimalPrecision(3)
+    .moveTo(twistModGroup)
+    .onRelease(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        saveState();
+        isSliderDragging = false;
+      }
+    })
+    .onPress(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        isSliderDragging = true;
+      }
+    });
+
+  yPos += twistModGroup.getBackgroundHeight() + 20;
+
   // 创建导出组
   exportGroup = cp5.addGroup("Export")
     .setPosition(20, yPos)
@@ -404,6 +499,18 @@ void updateParametersFromSliders() {
   shellThickness = 0.1f * sliderThickness.getValue();
   openingFlatten = sliderOpeningFlatten.getValue();
   openingRotationDeg = sliderOpeningRotation.getValue();
+  if (sliderTwistGradient != null) {
+    twistGradient = radians(sliderTwistGradient.getValue());
+  }
+  if (sliderTwistWaveAmplitude != null) {
+    twistWaveAmplitude = radians(sliderTwistWaveAmplitude.getValue());
+  }
+  if (sliderTwistWaveFrequency != null) {
+    twistWaveFrequency = sliderTwistWaveFrequency.getValue();
+  }
+  if (sliderTwistWavePhase != null) {
+    twistWavePhase = sliderTwistWavePhase.getValue();
+  }
 }
 
 void updateSliders() {
@@ -422,6 +529,18 @@ void updateSliders() {
   sliderThickness.setValue(shellThickness * 10);
   sliderOpeningFlatten.setValue(openingFlatten);
   sliderOpeningRotation.setValue(openingRotationDeg);
+  if (sliderTwistGradient != null) {
+    sliderTwistGradient.setValue(degrees(twistGradient));
+  }
+  if (sliderTwistWaveAmplitude != null) {
+    sliderTwistWaveAmplitude.setValue(degrees(twistWaveAmplitude));
+  }
+  if (sliderTwistWaveFrequency != null) {
+    sliderTwistWaveFrequency.setValue(twistWaveFrequency);
+  }
+  if (sliderTwistWavePhase != null) {
+    sliderTwistWavePhase.setValue(twistWavePhase);
+  }
 }
 
 void updateDropdownParameterSets() {

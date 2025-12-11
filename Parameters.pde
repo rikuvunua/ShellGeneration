@@ -31,6 +31,10 @@ ParameterSet saveParametersToXML() {
         paramSet.addChild("ShellThickness").setContent(Float.toString(shellThickness));
         paramSet.addChild("OpeningFlatten").setContent(Float.toString(openingFlatten));
         paramSet.addChild("OpeningRotationDeg").setContent(Float.toString(openingRotationDeg));
+        paramSet.addChild("TwistGradient").setContent(Float.toString(twistGradient));
+        paramSet.addChild("TwistWaveAmplitude").setContent(Float.toString(twistWaveAmplitude));
+        paramSet.addChild("TwistWaveFrequency").setContent(Float.toString(twistWaveFrequency));
+        paramSet.addChild("TwistWavePhase").setContent(Float.toString(twistWavePhase));
         
         saveXML(xml, filePath);
         
@@ -47,6 +51,10 @@ ParameterSet saveParametersToXML() {
         currentPS.shellThickness = shellThickness;
         currentPS.openingFlatten = openingFlatten;
         currentPS.openingRotationDeg = openingRotationDeg;
+        currentPS.twistGradient = twistGradient;
+        currentPS.twistWaveAmplitude = twistWaveAmplitude;
+        currentPS.twistWaveFrequency = twistWaveFrequency;
+        currentPS.twistWavePhase = twistWavePhase;
         currentPS.controlVertices = new PVector[vertexCount];
         for (int i = 0; i < vertexCount; i++) {
           currentPS.controlVertices[i] = controlVertices[i].copy();
@@ -74,6 +82,10 @@ ParameterSet saveParametersToXML() {
   paramSet.addChild("ShellThickness").setContent(Float.toString(shellThickness));
   paramSet.addChild("OpeningFlatten").setContent(Float.toString(openingFlatten));
   paramSet.addChild("OpeningRotationDeg").setContent(Float.toString(openingRotationDeg));
+  paramSet.addChild("TwistGradient").setContent(Float.toString(twistGradient));
+  paramSet.addChild("TwistWaveAmplitude").setContent(Float.toString(twistWaveAmplitude));
+  paramSet.addChild("TwistWaveFrequency").setContent(Float.toString(twistWaveFrequency));
+  paramSet.addChild("TwistWavePhase").setContent(Float.toString(twistWavePhase));
   
   // 保存XML文件
   saveXML(xml, filePath);
@@ -92,6 +104,10 @@ ParameterSet saveParametersToXML() {
   newPS.shellThickness = shellThickness;
   newPS.openingFlatten = openingFlatten;
   newPS.openingRotationDeg = openingRotationDeg;
+  newPS.twistGradient = twistGradient;
+  newPS.twistWaveAmplitude = twistWaveAmplitude;
+  newPS.twistWaveFrequency = twistWaveFrequency;
+  newPS.twistWavePhase = twistWavePhase;
   // 控制顶点不再保存到 XML，保持内存使用默认形状
   newPS.controlVertices = createDefaultControlVertices(vertexCount);
   
@@ -115,6 +131,10 @@ void loadParametersFromXML() {
     for (XML params : paramsSets) {
       ParameterSet ps = new ParameterSet();
       ps.name = "Parameter Set " + index;
+      ps.twistGradient = twistGradient;
+      ps.twistWaveAmplitude = twistWaveAmplitude;
+      ps.twistWaveFrequency = twistWaveFrequency;
+      ps.twistWavePhase = twistWavePhase;
 
       if (params.getChild("NumberOfStepGrowth") != null) {
         ps.numberOfStepGrowth = Integer.parseInt(params.getChild("NumberOfStepGrowth").getContent());
@@ -158,6 +178,19 @@ void loadParametersFromXML() {
         ps.openingRotationDeg = Float.parseFloat(params.getChild("OpeningRotationDeg").getContent());
       }
 
+      if (params.getChild("TwistGradient") != null) {
+        ps.twistGradient = Float.parseFloat(params.getChild("TwistGradient").getContent());
+      }
+      if (params.getChild("TwistWaveAmplitude") != null) {
+        ps.twistWaveAmplitude = Float.parseFloat(params.getChild("TwistWaveAmplitude").getContent());
+      }
+      if (params.getChild("TwistWaveFrequency") != null) {
+        ps.twistWaveFrequency = Float.parseFloat(params.getChild("TwistWaveFrequency").getContent());
+      }
+      if (params.getChild("TwistWavePhase") != null) {
+        ps.twistWavePhase = Float.parseFloat(params.getChild("TwistWavePhase").getContent());
+      }
+
       int loadedVertexCount = vertexCount;
       if (params.getChild("VertexCount") != null) {
         loadedVertexCount = constrain(Integer.parseInt(params.getChild("VertexCount").getContent()), MIN_VERTEX_COUNT, MAX_VERTEX_COUNT);
@@ -198,6 +231,10 @@ void applyParameterSet(ParameterSet ps) {
   shellThickness = ps.shellThickness;
   openingFlatten = ps.openingFlatten;
   openingRotationDeg = ps.openingRotationDeg;
+  twistGradient = ps.twistGradient;
+  twistWaveAmplitude = ps.twistWaveAmplitude;
+  twistWaveFrequency = ps.twistWaveFrequency;
+  twistWavePhase = ps.twistWavePhase;
 
   if (ps.controlVertices != null) {
     PVector[] sourceVertices;
@@ -238,6 +275,10 @@ void updateCurrentParameterSet() {
         currentPS.openingFlatten = openingFlatten;
         currentPS.openingRotationDeg = openingRotationDeg;
         currentPS.vertexCount = vertexCount;
+        currentPS.twistGradient = twistGradient;
+        currentPS.twistWaveAmplitude = twistWaveAmplitude;
+        currentPS.twistWaveFrequency = twistWaveFrequency;
+        currentPS.twistWavePhase = twistWavePhase;
         
         // 保存到XML文件
         saveParametersToXML();
@@ -343,6 +384,10 @@ void saveParameterSetToXML(ParameterSet ps, int index) {
     paramSet.addChild("ShellThickness").setContent(Float.toString(ps.shellThickness));
     paramSet.addChild("OpeningFlatten").setContent(Float.toString(ps.openingFlatten));
     paramSet.addChild("OpeningRotationDeg").setContent(Float.toString(ps.openingRotationDeg));
+    paramSet.addChild("TwistGradient").setContent(Float.toString(ps.twistGradient));
+    paramSet.addChild("TwistWaveAmplitude").setContent(Float.toString(ps.twistWaveAmplitude));
+    paramSet.addChild("TwistWaveFrequency").setContent(Float.toString(ps.twistWaveFrequency));
+    paramSet.addChild("TwistWavePhase").setContent(Float.toString(ps.twistWavePhase));
 
     saveXML(xml, filePath);
 }
@@ -360,6 +405,10 @@ class ParameterSet {
     float shellThickness;
     float openingFlatten;
     float openingRotationDeg;
+    float twistGradient;
+    float twistWaveAmplitude;
+    float twistWaveFrequency;
+    float twistWavePhase;
     PVector[] controlVertices;
     
     ParameterSet copy() {
@@ -376,6 +425,10 @@ class ParameterSet {
         newPS.shellThickness = this.shellThickness;
         newPS.openingFlatten = this.openingFlatten;
         newPS.openingRotationDeg = this.openingRotationDeg;
+        newPS.twistGradient = this.twistGradient;
+        newPS.twistWaveAmplitude = this.twistWaveAmplitude;
+        newPS.twistWaveFrequency = this.twistWaveFrequency;
+        newPS.twistWavePhase = this.twistWavePhase;
         
         if (this.controlVertices != null) {
             newPS.controlVertices = new PVector[this.controlVertices.length];
@@ -401,6 +454,10 @@ void resetParameters() {
     shellThickness = 1;
     openingFlatten = 0;
     openingRotationDeg = 0;
+    twistGradient = 0.0f;
+    twistWaveAmplitude = 0.0f;
+    twistWaveFrequency = 0.0f;
+    twistWavePhase = 0.0f;
     
     // 重置当前参数集索引
     currentParameterSetIndex = -1;
@@ -421,6 +478,18 @@ void resetParameters() {
     sliderThickness.setValue(1);    // Thickness
     sliderOpeningFlatten.setValue(0);
     sliderOpeningRotation.setValue(0);
+    if (sliderTwistGradient != null) {
+        sliderTwistGradient.setValue(degrees(twistGradient));
+    }
+    if (sliderTwistWaveAmplitude != null) {
+        sliderTwistWaveAmplitude.setValue(degrees(twistWaveAmplitude));
+    }
+    if (sliderTwistWaveFrequency != null) {
+        sliderTwistWaveFrequency.setValue(twistWaveFrequency);
+    }
+    if (sliderTwistWavePhase != null) {
+        sliderTwistWavePhase.setValue(twistWavePhase);
+    }
     
     // 设置下拉菜单显示"New Parameter"
     cp5.getController("Parameter Sets").setCaptionLabel("New Parameter");

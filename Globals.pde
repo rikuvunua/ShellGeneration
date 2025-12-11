@@ -25,6 +25,18 @@ static final int MIN_VERTEX_COUNT = 12;
 static final int MAX_VERTEX_COUNT = 36;
 int vertexCount = MIN_VERTEX_COUNT;
 
+// 扭转渐变叠波参数
+float twistGradient = 0.0f;          // 每步额外扭转增量（弧度）
+float twistWaveAmplitude = 0.0f;     // 叠加波幅（弧度）
+float twistWaveFrequency = 0.0f;     // 每步相位增量（弧度）
+float twistWavePhase = 0.0f;         // 初始相位（弧度）
+
+// 螺距“呼吸”变异参数（周期性调节生长率）
+boolean breathEnabled = false;
+float breathAmplitude = 0.0f;   // 生长率相对偏移幅度（0-0.5建议）
+float breathFrequency = 0.0f;   // 每步的相位增量（弧度）
+float breathPhase = 0.0f;       // 初始相位（弧度）
+
 PVector[] shape;
 PVector[][] rings;
 PVector[][] ringsOuter;

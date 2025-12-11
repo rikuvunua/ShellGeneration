@@ -19,10 +19,12 @@ void resetVectors() {
   
   for (int i = 1; i < numberOfStepGrowth; i++) {
     // 同时反向弯曲与扭转，让贝壳右旋且保持正向朝上
-    normGV[i] = rotation(normGV[i-1], normSV[i-1], -bendAngle);
+    float mutatedBendAngle = getBendAngleWithMutations(i);
+    normGV[i] = rotation(normGV[i-1], normSV[i-1], -mutatedBendAngle);
     normGV[i].normalize();
     // 取负号让截面旋转方向变为右旋
-    normSV[i] = rotation(normSV[i-1], normGV[i], -twistAngle);
+    float mutatedTwistAngle = getTwistAngleWithMutations(i);
+    normSV[i] = rotation(normSV[i-1], normGV[i], -mutatedTwistAngle);
     normSV[i].normalize();
     
     GV[i] = PVector.mult(normGV[i], GVLength[i]);

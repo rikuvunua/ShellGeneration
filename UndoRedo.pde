@@ -10,6 +10,10 @@ void saveState() {
   currentState.shellThickness = shellThickness;
   currentState.openingFlatten = openingFlatten;
   currentState.openingRotationDeg = openingRotationDeg;
+  currentState.twistGradient = twistGradient;
+  currentState.twistWaveAmplitude = twistWaveAmplitude;
+  currentState.twistWaveFrequency = twistWaveFrequency;
+  currentState.twistWavePhase = twistWavePhase;
   currentState.vertexCount = vertexCount;
   currentState.controlVertices = new PVector[vertexCount];
   for (int i = 0; i < vertexCount; i++) {
@@ -82,6 +86,10 @@ void applyState(ShellState state) {
   shellThickness = state.shellThickness;
   openingFlatten = state.openingFlatten;
   openingRotationDeg = state.openingRotationDeg;
+  twistGradient = state.twistGradient;
+  twistWaveAmplitude = state.twistWaveAmplitude;
+  twistWaveFrequency = state.twistWaveFrequency;
+  twistWavePhase = state.twistWavePhase;
 
   if (state.vertexCount != vertexCount) {
     setVertexCount(state.vertexCount, false);
@@ -108,6 +116,10 @@ class ShellState {
   float shellThickness;
   float openingFlatten;
   float openingRotationDeg;
+  float twistGradient;
+  float twistWaveAmplitude;
+  float twistWaveFrequency;
+  float twistWavePhase;
   PVector[] controlVertices;
   int vertexCount;
   
@@ -127,6 +139,10 @@ class ShellState {
       newState.shellThickness = this.shellThickness;
       newState.openingFlatten = this.openingFlatten;
       newState.openingRotationDeg = this.openingRotationDeg;
+      newState.twistGradient = this.twistGradient;
+      newState.twistWaveAmplitude = this.twistWaveAmplitude;
+      newState.twistWaveFrequency = this.twistWaveFrequency;
+      newState.twistWavePhase = this.twistWavePhase;
       newState.vertexCount = this.vertexCount;
       
       if (this.controlVertices != null) {
