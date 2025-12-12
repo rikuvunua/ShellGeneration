@@ -4,6 +4,7 @@ Slider sliderVertexCount, sliderGrowthStep, sliderGrowthRate, sliderBendAngle, s
 Slider sliderOpeningFlatten, sliderOpeningRotation;
 Slider sliderTwistGradient, sliderTwistWaveAmplitude, sliderTwistWaveFrequency, sliderTwistWavePhase;
 Button resetButton, undoButton, redoButton;
+Toggle toggleGradientBackground;
 
 DropdownList dropdownParameterSets;
 
@@ -48,7 +49,7 @@ void setupInterface() {
   yPos += yStep;
 
   // 添加所有滑块
-  sliderGrowthStep = cp5.addSlider("Growth")
+  sliderGrowthStep = cp5.addSlider("Growth Steps")
     .setPosition(10, yPos)
     .setSize(200, 20)
     .setRange(0, 100)
@@ -67,7 +68,25 @@ void setupInterface() {
     });
   yPos += yStep;
 
-  // Growth Rate UI 隐藏
+  sliderGrowthRate = cp5.addSlider("Growth Rate")
+    .setPosition(10, yPos)
+    .setSize(200, 20)
+    .setRange(1.0f, 1.05f)
+    .setValue(growthRate)
+    .setDecimalPrecision(3)
+    .moveTo(parametersGroup)
+    .onRelease(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        saveState();
+        isSliderDragging = false;
+      }
+    })
+    .onPress(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        isSliderDragging = true;
+      }
+    });
+  yPos += yStep;
 
   sliderBendAngle = cp5.addSlider("Bending Angle")
     .setPosition(10, yPos)
@@ -160,6 +179,22 @@ void setupInterface() {
     .onPress(new CallbackListener() {
       public void controlEvent(CallbackEvent event) {
         isSliderDragging = true;
+      }
+    });
+  sliderSideShift.hide();
+  yPos += yStep;
+
+  toggleGradientBackground = cp5.addToggle("Gradient Background")
+    .setPosition(10, yPos)
+    .setSize(20, 20)
+    .setValue(useGradientBackground)
+    .setMode(ControlP5.SWITCH)
+    .setCaptionLabel("Gradient Background")
+    .moveTo(parametersGroup)
+    .onChange(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        useGradientBackground = event.getController().getValue() > 0.5f;
+        gradientNeedsUpdate = true;
       }
     });
   yPos += yStep;

@@ -41,7 +41,11 @@ void draw() {
   processSerial();
 
   int renderMode = (radio != null) ? (int)radio.getValue() : 1;
-  drawBackgroundGradient();
+  if (useGradientBackground) {
+    drawBackgroundGradient();
+  } else {
+    background(0xFF, 0xFF, 0xFF);
+  }
   
   // 默认光照会在每帧被重置，补回灯光以获得与旧版相同的明暗效果
   lights();

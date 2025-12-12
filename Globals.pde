@@ -78,3 +78,4 @@ int backgroundTopColor;
 int backgroundBottomColor;
 PImage backgroundGradient;
 boolean gradientNeedsUpdate = true;
+boolean useGradientBackground = false;

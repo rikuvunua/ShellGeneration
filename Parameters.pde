@@ -466,7 +466,7 @@ void resetParameters() {
     if (sliderVertexCount != null) {
         sliderVertexCount.setValue(vertexCount);
     }
-    sliderGrowthStep.setValue(50);  // Growth
+    sliderGrowthStep.setValue(50);  // Growth Steps
     if (sliderGrowthRate != null) {
         sliderGrowthRate.setValue(growthRate);
     }
