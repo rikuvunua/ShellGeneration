@@ -69,9 +69,10 @@ void draw() {
   if (renderMode == 1) {
     drawOpenRings();
   } else if (renderMode == 2) {  // Show Shell Surface
-    drawWireSurface();  // 现在显示线框表面
+    drawShellOutline();  // 新增的贴合外轮廓
+    drawWireSurface();   // 现在显示线框表面
   } else {  // Show Surface (值为3)
-    drawSurface();      // 现在显示实体表面（经典模式）
+    drawSurface();       // 现在显示实体表面（经典模式）
   }
 
   popMatrix();
@@ -412,6 +413,106 @@ void drawWireSurface() {
     vertex(pStartCurrent.x, pStartCurrent.y, pStartCurrent.z);
     endShape();
   }
+}
+
+// 在表面外侧绘制一个加厚的黑色轮廓，避免修改原有描边
+void drawShellOutline() {
+  int ringCount = getVisibleRingCount();
+  if (ringCount < 2) {
+    return;
+  }
+
+  float outlineOffset = 1.25f / max(zoom, 0.0001f); // 按缩放保持视觉厚度
+
+  pushStyle();
+  hint(DISABLE_DEPTH_TEST); // 不写入深度，让后续线框盖住轮廓内部
+  noStroke();
+  fill(0);
+
+  // 外表面
+  for (int i = 0; i < ringCount - 1; i++) {
+    for (int j = 0; j < vertexCount; j++) {
+      int nextJ = (j + 1) % vertexCount;
+      PVector outer00 = getOffsetOuterPoint(i, j, outlineOffset);
+      PVector outer10 = getOffsetOuterPoint(i + 1, j, outlineOffset);
+      PVector outer11 = getOffsetOuterPoint(i + 1, nextJ, outlineOffset);
+      PVector outer01 = getOffsetOuterPoint(i, nextJ, outlineOffset);
+      beginShape();
+      vertex(outer00.x, outer00.y, outer00.z);
+      vertex(outer10.x, outer10.y, outer10.z);
+      vertex(outer11.x, outer11.y, outer11.z);
+      vertex(outer01.x, outer01.y, outer01.z);
+      endShape(CLOSE);
+    }
+  }
+
+  // 内表面
+  for (int i = 0; i < ringCount - 1; i++) {
+    for (int j = 0; j < vertexCount; j++) {
+      int nextJ = (j + 1) % vertexCount;
+      PVector inner00 = getOffsetInnerPoint(i, j, outlineOffset);
+      PVector inner01 = getOffsetInnerPoint(i, nextJ, outlineOffset);
+      PVector inner11 = getOffsetInnerPoint(i + 1, nextJ, outlineOffset);
+      PVector inner10 = getOffsetInnerPoint(i + 1, j, outlineOffset);
+      beginShape();
+      vertex(inner00.x, inner00.y, inner00.z);
+      vertex(inner01.x, inner01.y, inner01.z);
+      vertex(inner11.x, inner11.y, inner11.z);
+      vertex(inner10.x, inner10.y, inner10.z);
+      endShape(CLOSE);
+    }
+  }
+
+  // 侧面
+  for (int i = 0; i < ringCount; i++) {
+    for (int j = 0; j < vertexCount; j++) {
+      int nextJ = (j + 1) % vertexCount;
+      PVector outer0 = getOffsetOuterPoint(i, j, outlineOffset);
+      PVector outer1 = getOffsetOuterPoint(i, nextJ, outlineOffset);
+      PVector inner1 = getOffsetInnerPoint(i, nextJ, outlineOffset);
+      PVector inner0 = getOffsetInnerPoint(i, j, outlineOffset);
+      beginShape();
+      vertex(outer0.x, outer0.y, outer0.z);
+      vertex(outer1.x, outer1.y, outer1.z);
+      vertex(inner1.x, inner1.y, inner1.z);
+      vertex(inner0.x, inner0.y, inner0.z);
+      endShape(CLOSE);
+    }
+  }
+
+  // 首端面
+  for (int j = 0; j < vertexCount; j++) {
+    int nextJ = (j + 1) % vertexCount;
+    PVector outer0 = getOffsetOuterPoint(0, j, outlineOffset);
+    PVector outer1 = getOffsetOuterPoint(0, nextJ, outlineOffset);
+    PVector inner1 = getOffsetInnerPoint(0, nextJ, outlineOffset);
+    PVector inner0 = getOffsetInnerPoint(0, j, outlineOffset);
+    beginShape();
+    vertex(outer0.x, outer0.y, outer0.z);
+    vertex(outer1.x, outer1.y, outer1.z);
+    vertex(inner1.x, inner1.y, inner1.z);
+    vertex(inner0.x, inner0.y, inner0.z);
+    endShape(CLOSE);
+  }
+
+  // 尾端面
+  int lastIndex = ringCount - 1;
+  for (int j = 0; j < vertexCount; j++) {
+    int nextJ = (j + 1) % vertexCount;
+    PVector outer0 = getOffsetOuterPoint(lastIndex, j, outlineOffset);
+    PVector outer1 = getOffsetOuterPoint(lastIndex, nextJ, outlineOffset);
+    PVector inner1 = getOffsetInnerPoint(lastIndex, nextJ, outlineOffset);
+    PVector inner0 = getOffsetInnerPoint(lastIndex, j, outlineOffset);
+    beginShape();
+    vertex(outer0.x, outer0.y, outer0.z);
+    vertex(outer1.x, outer1.y, outer1.z);
+    vertex(inner1.x, inner1.y, inner1.z);
+    vertex(inner0.x, inner0.y, inner0.z);
+    endShape(CLOSE);
+  }
+
+  hint(ENABLE_DEPTH_TEST);
+  popStyle();
 }
 
 // 添加增量控制方法

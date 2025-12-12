@@ -118,3 +118,20 @@ PVector getAnimatedOuterPoint(int ringIndex, int vertexIndex) {
 PVector getAnimatedInnerPoint(int ringIndex, int vertexIndex) {
     return ringsInner[ringIndex][vertexIndex];
 }
+
+// 在顶点法线方向上偏移指定距离，供外轮廓使用
+PVector getOffsetOuterPoint(int ringIndex, int vertexIndex, float offset) {
+    PVector base = getAnimatedOuterPoint(ringIndex, vertexIndex).copy();
+    PVector normal = outerNormals[ringIndex][vertexIndex];
+    PVector expanded = PVector.mult(normal, offset);
+    base.add(expanded);
+    return base;
+}
+
+PVector getOffsetInnerPoint(int ringIndex, int vertexIndex, float offset) {
+    PVector base = getAnimatedInnerPoint(ringIndex, vertexIndex).copy();
+    PVector normal = innerNormals[ringIndex][vertexIndex];
+    PVector expanded = PVector.mult(normal, offset);
+    base.add(expanded);
+    return base;
+}
