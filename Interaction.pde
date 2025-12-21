@@ -49,7 +49,7 @@ void mouseReleased() {
 void mouseWheel(MouseEvent event) {
   float e = event.getCount();
   zoom += e * 0.05;
-  zoom = constrain(zoom, 0.1, 7.5); // 限制缩放级别
+  zoom = constrain(zoom, 0.5, 15.0); // 限制缩放级别（扩大最大放大倍数）
 }
 
 // 串口增量控制

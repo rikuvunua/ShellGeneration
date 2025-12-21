@@ -78,4 +78,7 @@ int backgroundTopColor;
 int backgroundBottomColor;
 PImage backgroundGradient;
 boolean gradientNeedsUpdate = true;
-boolean useGradientBackground = false;
+boolean useGradientBackground = true;
+
+// 2D 扭转角折线图开关
+boolean showTwistPlot2D = false;

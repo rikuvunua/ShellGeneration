@@ -16,7 +16,7 @@ void setup() {
   configureShellShader();
   backgroundTopColor = color(0x19, 0x19, 0x19);
   backgroundBottomColor = color(0xbc, 0xe1, 0xe7);
-  gradientNeedsUpdate = true;
+  gradientNeedsUpdate = true;  
   
   initSerial();
   
@@ -76,6 +76,18 @@ void draw() {
   }
 
   popMatrix();
+
+  // 叠加扭转角折线图（先关闭深度测试避免与 3D 遮挡）
+  if (showTwistPlot2D) {
+    hint(DISABLE_DEPTH_TEST);
+    float plotWidth = TWIST_PLOT_WIDTH;
+    float plotHeight = TWIST_PLOT_HEIGHT;
+    float plotMargin = TWIST_PLOT_MARGIN;
+    float plotX = width - plotWidth - plotMargin;
+    float plotY = height - plotHeight - plotMargin;
+    drawTwistAnglePlot2D(plotX, plotY, plotWidth, plotHeight);
+    hint(ENABLE_DEPTH_TEST);
+  }
 
   drawInterface();
   drawControlInterface();
@@ -422,7 +434,7 @@ void drawShellOutline() {
     return;
   }
 
-  float outlineOffset = 1.25f / max(zoom, 0.0001f); // 按缩放保持视觉厚度
+  float outlineOffset = 2f / max(zoom, 0.0001f); // 按缩放保持视觉厚度（外轮廓粗细为2）
 
   pushStyle();
   hint(DISABLE_DEPTH_TEST); // 不写入深度，让后续线框盖住轮廓内部

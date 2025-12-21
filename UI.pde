@@ -5,10 +5,16 @@ Slider sliderOpeningFlatten, sliderOpeningRotation;
 Slider sliderTwistGradient, sliderTwistWaveAmplitude, sliderTwistWaveFrequency, sliderTwistWavePhase;
 Button resetButton, undoButton, redoButton;
 Toggle toggleGradientBackground;
+Toggle toggleShowTwistPlot;
+
+// UI spacing rules
+final int UI_SPACING = 30;      // vertical step between stacked controls
+final int UI_GROUP_GAP = 20;    // gap between groups
+final int UI_BUTTON_GAP = 12;   // extra gap between stacked buttons
 
 DropdownList dropdownParameterSets;
 
-Group parametersGroup, openingShapeGroup, twistModGroup, exportGroup;
+Group parametersGroup, openingShapeGroup, twistModGroup, displayGroup, exportGroup;
 
 // UI state
 boolean isSliderDragging = false;
@@ -23,7 +29,7 @@ void setupInterface() {
     .setLabel("Parameters");
 
   int yPos = 10;
-  int yStep = 30;
+  int yStep = UI_SPACING;
 
   // 顶点数量滑块（可调 12-36）
   sliderVertexCount = cp5.addSlider("Vertex Count")
@@ -71,7 +77,7 @@ void setupInterface() {
   sliderGrowthRate = cp5.addSlider("Growth Rate")
     .setPosition(10, yPos)
     .setSize(200, 20)
-    .setRange(1.0f, 1.05f)
+    .setRange(1.0f, 1.06f)
     .setValue(growthRate)
     .setDecimalPrecision(3)
     .moveTo(parametersGroup)
@@ -182,22 +188,6 @@ void setupInterface() {
       }
     });
   sliderSideShift.hide();
-  yPos += yStep;
-
-  toggleGradientBackground = cp5.addToggle("Gradient Background")
-    .setPosition(10, yPos)
-    .setSize(20, 20)
-    .setValue(useGradientBackground)
-    .setMode(ControlP5.SWITCH)
-    .setCaptionLabel("Gradient Background")
-    .moveTo(parametersGroup)
-    .onChange(new CallbackListener() {
-      public void controlEvent(CallbackEvent event) {
-        useGradientBackground = event.getController().getValue() > 0.5f;
-        gradientNeedsUpdate = true;
-      }
-    });
-  yPos += yStep;
 
   // 记录 DropdownList 的位置
   int yDropdown = yPos;
@@ -317,8 +307,15 @@ void setupInterface() {
       }
     });
 
+  // 统一 Parameters 组高度：取最后一行按钮底部与下拉菜单底部的较大值，再加固定留白
+  int paramsButtonsBottom = yPos + 30;           // 最后一排按钮高度 30
+  int paramsDropdownBottom = yDropdown + 200;    // 下拉区域高度 200
+  int paramsContentBottom = max(paramsButtonsBottom, paramsDropdownBottom);
+  parametersGroup.setBackgroundHeight(paramsContentBottom + UI_GROUP_GAP);
+  // 更新 yPos 为屏幕坐标，便于后续组定位
+  yPos = (int)(parametersGroup.getPosition()[1] + parametersGroup.getBackgroundHeight() + UI_GROUP_GAP);
+
   // 开口形状控制组
-  yPos += 85;
   openingShapeGroup = cp5.addGroup("Opening Shape")
     .setPosition(20, yPos)
     .setWidth(280)
@@ -368,7 +365,10 @@ void setupInterface() {
       }
     });
 
-  yPos += openingShapeGroup.getBackgroundHeight() + 20;
+  // 统一底部留白（最后控件高度 20）
+  int lastOpeningTop = yOpeningPos;
+  openingShapeGroup.setBackgroundHeight((int)(lastOpeningTop + 20 + UI_GROUP_GAP));
+  yPos += openingShapeGroup.getBackgroundHeight() + UI_GROUP_GAP;
 
   // 扭转渐变叠波组
   twistModGroup = cp5.addGroup("Twist Mod")
@@ -462,14 +462,65 @@ void setupInterface() {
       }
     });
 
-  yPos += twistModGroup.getBackgroundHeight() + 20;
+  // 统一底部留白（最后控件高度 20）
+  int lastTwistTop = yTwistPos;
+  twistModGroup.setBackgroundHeight((int)(lastTwistTop + 20 + UI_GROUP_GAP));
+  yPos += twistModGroup.getBackgroundHeight() + UI_GROUP_GAP;
+
+  // 显示/绘图组
+  displayGroup = cp5.addGroup("Display")
+    .setPosition(20, yPos)
+    .setWidth(280)
+    .setBackgroundColor(color(0, 0, 0, 20))
+    .setBackgroundHeight(100)
+    .setLabel("Display");
+
+  int yDisplayPos = 10;
+
+  toggleGradientBackground = cp5.addToggle("Gradient Background")
+    .setPosition(10, yDisplayPos)
+    .setSize(20, 20) // 方形样式
+    .setValue(useGradientBackground)
+    .setCaptionLabel("Gradient Background")
+    .moveTo(displayGroup)
+    .onChange(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        useGradientBackground = event.getController().getValue() > 0.5f;
+        gradientNeedsUpdate = true;
+      }
+    });
+  toggleGradientBackground.getCaptionLabel()
+    .align(ControlP5.LEFT, ControlP5.CENTER)
+    .setPadding((int)(toggleGradientBackground.getWidth() + 6), 0); // 文本放到方形右侧
+
+  yDisplayPos += yStep;
+
+  toggleShowTwistPlot = cp5.addToggle("ShowTwistPlot")
+    .setPosition(10, yDisplayPos)
+    .setSize(20, 20) // 方形样式
+    .setValue(showTwistPlot2D)
+    .setCaptionLabel("Show Twist Plot")
+    .moveTo(displayGroup)
+    .onChange(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        showTwistPlot2D = event.getController().getValue() > 0.5f;
+      }
+    });
+  toggleShowTwistPlot.getCaptionLabel()
+    .align(ControlP5.LEFT, ControlP5.CENTER)
+    .setPadding((int)(toggleShowTwistPlot.getWidth() + 6), 0); // 文本放到方形右侧
+
+  // 统一底部留白（最后控件高度 20）
+  int lastDisplayTop = yDisplayPos;
+  displayGroup.setBackgroundHeight((int)(lastDisplayTop + 20 + UI_GROUP_GAP));
+  yPos += displayGroup.getBackgroundHeight() + UI_GROUP_GAP;
 
   // 创建导出组
   exportGroup = cp5.addGroup("Export")
     .setPosition(20, yPos)
     .setWidth(280)
     .setBackgroundColor(color(0, 0, 0, 20))
-    .setBackgroundHeight(90)
+    .setBackgroundHeight(140)
     .setLabel("Export");
 
   int yExportPos = 10;
@@ -505,6 +556,23 @@ void setupInterface() {
         export3DModel();
       }
     });
+
+  yExportPos += yStep + UI_BUTTON_GAP; // 统一按钮间距规则
+
+  cp5.addButton("ExportPlotPNG")
+    .setPosition(10, yExportPos)
+    .setSize(200, 30)
+    .setLabel("Export Plot PNG (2x)")
+    .moveTo(exportGroup)
+    .onClick(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        exportTwistAnglePlotPNG2x();
+      }
+    });
+
+  // 为底部留白做准备
+  yExportPos += yStep;
+  exportGroup.setBackgroundHeight((int)(yExportPos + UI_GROUP_GAP));
 
   // 在所有界面元素创建完成后，将下拉菜单置于最顶层
   dropdownParameterSets.bringToFront();
