@@ -90,7 +90,7 @@ void export3DModel() {
 }
 
 void writeSTLFile() {
-  String dirPath = sketchPath("models/stl/");
+  String dirPath = sketchPath("export/models/stl/");
   File dir = new File(dirPath);
   if (!dir.exists()) {
     dir.mkdirs();

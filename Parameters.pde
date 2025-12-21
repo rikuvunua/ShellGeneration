@@ -1,5 +1,5 @@
 ParameterSet saveParametersToXML() {
-  String filePath = sketchPath("assets/shell_parameters.xml");
+  String filePath = sketchPath("parameters/shell_parameters.xml");
   XML xml;
   
   // 检查XML文件是否存在
@@ -35,6 +35,11 @@ ParameterSet saveParametersToXML() {
         paramSet.addChild("TwistWaveAmplitude").setContent(Float.toString(twistWaveAmplitude));
         paramSet.addChild("TwistWaveFrequency").setContent(Float.toString(twistWaveFrequency));
         paramSet.addChild("TwistWavePhase").setContent(Float.toString(twistWavePhase));
+        paramSet.addChild("CameraRotX").setContent(Float.toString(rotX));
+        paramSet.addChild("CameraRotY").setContent(Float.toString(rotY));
+        paramSet.addChild("CameraPanX").setContent(Float.toString(panX));
+        paramSet.addChild("CameraPanY").setContent(Float.toString(panY));
+        paramSet.addChild("CameraZoom").setContent(Float.toString(zoom));
         
         saveXML(xml, filePath);
         
@@ -55,6 +60,11 @@ ParameterSet saveParametersToXML() {
         currentPS.twistWaveAmplitude = twistWaveAmplitude;
         currentPS.twistWaveFrequency = twistWaveFrequency;
         currentPS.twistWavePhase = twistWavePhase;
+        currentPS.camRotX = rotX;
+        currentPS.camRotY = rotY;
+        currentPS.camPanX = panX;
+        currentPS.camPanY = panY;
+        currentPS.camZoom = zoom;
         currentPS.controlVertices = new PVector[vertexCount];
         for (int i = 0; i < vertexCount; i++) {
           currentPS.controlVertices[i] = controlVertices[i].copy();
@@ -86,6 +96,11 @@ ParameterSet saveParametersToXML() {
   paramSet.addChild("TwistWaveAmplitude").setContent(Float.toString(twistWaveAmplitude));
   paramSet.addChild("TwistWaveFrequency").setContent(Float.toString(twistWaveFrequency));
   paramSet.addChild("TwistWavePhase").setContent(Float.toString(twistWavePhase));
+  paramSet.addChild("CameraRotX").setContent(Float.toString(rotX));
+  paramSet.addChild("CameraRotY").setContent(Float.toString(rotY));
+  paramSet.addChild("CameraPanX").setContent(Float.toString(panX));
+  paramSet.addChild("CameraPanY").setContent(Float.toString(panY));
+  paramSet.addChild("CameraZoom").setContent(Float.toString(zoom));
   
   // 保存XML文件
   saveXML(xml, filePath);
@@ -108,6 +123,11 @@ ParameterSet saveParametersToXML() {
   newPS.twistWaveAmplitude = twistWaveAmplitude;
   newPS.twistWaveFrequency = twistWaveFrequency;
   newPS.twistWavePhase = twistWavePhase;
+  newPS.camRotX = rotX;
+  newPS.camRotY = rotY;
+  newPS.camPanX = panX;
+  newPS.camPanY = panY;
+  newPS.camZoom = zoom;
   // 控制顶点不再保存到 XML，保持内存使用默认形状
   newPS.controlVertices = createDefaultControlVertices(vertexCount);
   
@@ -115,7 +135,7 @@ ParameterSet saveParametersToXML() {
 }
 
 void loadParametersFromXML() {
-  String filePath = sketchPath("assets/shell_parameters.xml");
+  String filePath = sketchPath("parameters/shell_parameters.xml");
   File file = new File(filePath);
   if (file.exists()) {
     XML xml = loadXML(filePath);
@@ -135,6 +155,11 @@ void loadParametersFromXML() {
       ps.twistWaveAmplitude = twistWaveAmplitude;
       ps.twistWaveFrequency = twistWaveFrequency;
       ps.twistWavePhase = twistWavePhase;
+      ps.camRotX = rotX;
+      ps.camRotY = rotY;
+      ps.camPanX = panX;
+      ps.camPanY = panY;
+      ps.camZoom = zoom;
 
       if (params.getChild("NumberOfStepGrowth") != null) {
         ps.numberOfStepGrowth = Integer.parseInt(params.getChild("NumberOfStepGrowth").getContent());
@@ -190,6 +215,21 @@ void loadParametersFromXML() {
       if (params.getChild("TwistWavePhase") != null) {
         ps.twistWavePhase = Float.parseFloat(params.getChild("TwistWavePhase").getContent());
       }
+      if (params.getChild("CameraRotX") != null) {
+        ps.camRotX = Float.parseFloat(params.getChild("CameraRotX").getContent());
+      }
+      if (params.getChild("CameraRotY") != null) {
+        ps.camRotY = Float.parseFloat(params.getChild("CameraRotY").getContent());
+      }
+      if (params.getChild("CameraPanX") != null) {
+        ps.camPanX = Float.parseFloat(params.getChild("CameraPanX").getContent());
+      }
+      if (params.getChild("CameraPanY") != null) {
+        ps.camPanY = Float.parseFloat(params.getChild("CameraPanY").getContent());
+      }
+      if (params.getChild("CameraZoom") != null) {
+        ps.camZoom = Float.parseFloat(params.getChild("CameraZoom").getContent());
+      }
 
       int loadedVertexCount = vertexCount;
       if (params.getChild("VertexCount") != null) {
@@ -235,6 +275,11 @@ void applyParameterSet(ParameterSet ps) {
   twistWaveAmplitude = ps.twistWaveAmplitude;
   twistWaveFrequency = ps.twistWaveFrequency;
   twistWavePhase = ps.twistWavePhase;
+  rotX = ps.camRotX;
+  rotY = ps.camRotY;
+  panX = ps.camPanX;
+  panY = ps.camPanY;
+  zoom = ps.camZoom;
 
   if (ps.controlVertices != null) {
     PVector[] sourceVertices;
@@ -279,6 +324,11 @@ void updateCurrentParameterSet() {
         currentPS.twistWaveAmplitude = twistWaveAmplitude;
         currentPS.twistWaveFrequency = twistWaveFrequency;
         currentPS.twistWavePhase = twistWavePhase;
+        currentPS.camRotX = rotX;
+        currentPS.camRotY = rotY;
+        currentPS.camPanX = panX;
+        currentPS.camPanY = panY;
+        currentPS.camZoom = zoom;
         
         // 保存到XML文件
         saveParametersToXML();
@@ -330,7 +380,7 @@ void deleteCurrentParameterSet() {
 
 // 添加从XML文件中删除参数集的方法
 void deleteParameterSetFromXML(int index) {
-    String filePath = sketchPath("assets/shell_parameters.xml");
+    String filePath = sketchPath("parameters/shell_parameters.xml");
     File file = new File(filePath);
     if (file.exists()) {
         XML xml = loadXML(filePath);
@@ -344,7 +394,7 @@ void deleteParameterSetFromXML(int index) {
 
 // 添加将参数集保存到特定位置的方法
 void saveParameterSetToXML(ParameterSet ps, int index) {
-    String filePath = sketchPath("assets/shell_parameters.xml");
+    String filePath = sketchPath("parameters/shell_parameters.xml");
     XML xml;
     File file = new File(filePath);
     
@@ -388,6 +438,11 @@ void saveParameterSetToXML(ParameterSet ps, int index) {
     paramSet.addChild("TwistWaveAmplitude").setContent(Float.toString(ps.twistWaveAmplitude));
     paramSet.addChild("TwistWaveFrequency").setContent(Float.toString(ps.twistWaveFrequency));
     paramSet.addChild("TwistWavePhase").setContent(Float.toString(ps.twistWavePhase));
+    paramSet.addChild("CameraRotX").setContent(Float.toString(ps.camRotX));
+    paramSet.addChild("CameraRotY").setContent(Float.toString(ps.camRotY));
+    paramSet.addChild("CameraPanX").setContent(Float.toString(ps.camPanX));
+    paramSet.addChild("CameraPanY").setContent(Float.toString(ps.camPanY));
+    paramSet.addChild("CameraZoom").setContent(Float.toString(ps.camZoom));
 
     saveXML(xml, filePath);
 }
@@ -409,6 +464,11 @@ class ParameterSet {
     float twistWaveAmplitude;
     float twistWaveFrequency;
     float twistWavePhase;
+    float camRotX;
+    float camRotY;
+    float camPanX;
+    float camPanY;
+    float camZoom;
     PVector[] controlVertices;
     
     ParameterSet copy() {
@@ -429,6 +489,11 @@ class ParameterSet {
         newPS.twistWaveAmplitude = this.twistWaveAmplitude;
         newPS.twistWaveFrequency = this.twistWaveFrequency;
         newPS.twistWavePhase = this.twistWavePhase;
+        newPS.camRotX = this.camRotX;
+        newPS.camRotY = this.camRotY;
+        newPS.camPanX = this.camPanX;
+        newPS.camPanY = this.camPanY;
+        newPS.camZoom = this.camZoom;
         
         if (this.controlVertices != null) {
             newPS.controlVertices = new PVector[this.controlVertices.length];
@@ -458,7 +523,8 @@ void resetParameters() {
     twistWaveAmplitude = 0.0f;
     twistWaveFrequency = 0.0f;
     twistWavePhase = 0.0f;
-    
+    resetCameraView(); // 同时重置摄像机平移/视角
+
     // 重置当前参数集索引
     currentParameterSetIndex = -1;
     

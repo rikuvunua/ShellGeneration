@@ -9,6 +9,13 @@ float panX = 0;
 float panY = 0;
 boolean isDraggingControlVertex = false;
 
+// 默认摄像机参数（度与直值），用于重置视角和面板显示
+final float DEFAULT_CAMERA_ROT_X_DEG = -17.5f;
+final float DEFAULT_CAMERA_ROT_Y_DEG = 0f;
+final float DEFAULT_CAMERA_PAN_X = 35f;
+final float DEFAULT_CAMERA_PAN_Y = -375f;
+final float DEFAULT_CAMERA_ZOOM = 5.5f;
+
 int numberOfStepGrowth = 50;
 float bendAngle = 0.3f;
 float twistAngle = 0.05f;
@@ -82,3 +89,4 @@ boolean useGradientBackground = true;
 
 // 2D 扭转角折线图开关
 boolean showTwistPlot2D = false;
+boolean showCameraInfo = false; // 默认不显示摄像机信息面板

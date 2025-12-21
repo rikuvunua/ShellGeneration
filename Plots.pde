@@ -138,9 +138,34 @@ void exportTwistAnglePlotPNG2x() {
   plotPG.popMatrix();
   plotPG.endDraw();
 
-  String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
-  String filename = "twist_plot_" + timestamp + "_2x.png";
-  String filePath = sketchPath(filename);
+  String dirPath = sketchPath("export/png/");
+  File dir = new File(dirPath);
+  if (!dir.exists()) {
+    dir.mkdirs();
+  }
+  String[] fileNames = dir.list();
+  String prefix = "twist_plot_2x_";
+  String suffix = ".png";
+  int maxNumber = 0;
+  if (fileNames != null) {
+    for (String name : fileNames) {
+      if (name.startsWith(prefix) && name.endsWith(suffix)) {
+        String numberPart = name.substring(prefix.length(), name.length() - suffix.length());
+        try {
+          int num = Integer.parseInt(numberPart);
+          if (num > maxNumber) {
+            maxNumber = num;
+          }
+        } catch (NumberFormatException e) {
+          // 跳过不符合编号规则的文件
+        }
+      }
+    }
+  }
+  int nextNumber = maxNumber + 1;
+  String numberStr = String.format("%02d", nextNumber);
+  String filename = prefix + numberStr + suffix;
+  String filePath = new File(dir, filename).getAbsolutePath();
   plotPG.save(filePath);
   println("Twist plot exported to " + filePath);
 }

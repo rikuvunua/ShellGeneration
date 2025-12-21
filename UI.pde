@@ -6,6 +6,9 @@ Slider sliderTwistGradient, sliderTwistWaveAmplitude, sliderTwistWaveFrequency, 
 Button resetButton, undoButton, redoButton;
 Toggle toggleGradientBackground;
 Toggle toggleShowTwistPlot;
+Toggle toggleShowCameraInfo;
+Textfield sliderInputField = null;
+boolean sliderInputPrimed = false; // first key replaces existing text
 
 // UI spacing rules
 final int UI_SPACING = 30;      // vertical step between stacked controls
@@ -18,6 +21,14 @@ Group parametersGroup, openingShapeGroup, twistModGroup, displayGroup, exportGro
 
 // UI state
 boolean isSliderDragging = false;
+ArrayList<Slider> allSliders = new ArrayList<Slider>();
+Slider sliderBeingEdited = null;
+
+void registerSlider(Slider slider) {
+  if (slider != null) {
+    allSliders.add(slider);
+  }
+}
 
 void setupInterface() {
   // 创建参数组
@@ -52,6 +63,7 @@ void setupInterface() {
       }
     });
   sliderVertexCount.snapToTickMarks(true);
+  registerSlider(sliderVertexCount);
   yPos += yStep;
 
   // 添加所有滑块
@@ -59,6 +71,7 @@ void setupInterface() {
     .setPosition(10, yPos)
     .setSize(200, 20)
     .setRange(0, 100)
+    .setDecimalPrecision(0)
     .setValue(numberOfStepGrowth)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
@@ -72,6 +85,7 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderGrowthStep);
   yPos += yStep;
 
   sliderGrowthRate = cp5.addSlider("Growth Rate")
@@ -79,7 +93,7 @@ void setupInterface() {
     .setSize(200, 20)
     .setRange(1.0f, 1.06f)
     .setValue(growthRate)
-    .setDecimalPrecision(3)
+    .setDecimalPrecision(2)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
       public void controlEvent(CallbackEvent event) {
@@ -92,12 +106,14 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderGrowthRate);
   yPos += yStep;
 
   sliderBendAngle = cp5.addSlider("Bending Angle")
     .setPosition(10, yPos)
     .setSize(200, 20)
     .setRange(0, 100)
+    .setDecimalPrecision(0)
     .setValue(bendAngle * 200)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
@@ -111,12 +127,14 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderBendAngle);
   yPos += yStep;
 
   sliderTwistAngle = cp5.addSlider("Twisting Angle")
     .setPosition(10, yPos)
     .setSize(200, 20)
     .setRange(0, 200)
+    .setDecimalPrecision(0)
     .setValue(twistAngle * 1000)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
@@ -130,12 +148,14 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderTwistAngle);
   yPos += yStep;
 
   sliderConeHight = cp5.addSlider("Cone Height")
     .setPosition(10, yPos)
     .setSize(200, 20)
     .setRange(0, 100)
+    .setDecimalPrecision(0)
     .setValue(initGVL * 40)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
@@ -149,12 +169,14 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderConeHight);
   yPos += yStep;
 
   sliderConeWidth = cp5.addSlider("Cone Width")
     .setPosition(10, yPos)
     .setSize(200, 20)
     .setRange(20, 80)
+    .setDecimalPrecision(0)
     .setValue(initSVL * 10)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
@@ -168,12 +190,14 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderConeWidth);
   yPos += yStep;
 
   sliderSideShift = cp5.addSlider("Side Shift")
     .setPosition(10, yPos)
     .setSize(200, 20)
     .setRange(-100, 100)
+    .setDecimalPrecision(0)
     .setValue(sideShift * 100)
     .moveTo(parametersGroup)
     .onRelease(new CallbackListener() {
@@ -188,6 +212,7 @@ void setupInterface() {
       }
     });
   sliderSideShift.hide();
+  registerSlider(sliderSideShift);
 
   // 记录 DropdownList 的位置
   int yDropdown = yPos;
@@ -343,6 +368,7 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderOpeningFlatten);
 
   yOpeningPos += yStep;
 
@@ -351,7 +377,7 @@ void setupInterface() {
     .setSize(200, 20)
     .setRange(-180, 180)
     .setValue(openingRotationDeg)
-    .setDecimalPrecision(1)
+    .setDecimalPrecision(0)
     .moveTo(openingShapeGroup)
     .onRelease(new CallbackListener() {
       public void controlEvent(CallbackEvent event) {
@@ -364,6 +390,7 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderOpeningRotation);
 
   // 统一底部留白（最后控件高度 20）
   int lastOpeningTop = yOpeningPos;
@@ -385,7 +412,7 @@ void setupInterface() {
     .setSize(200, 20)
     .setRange(-1.0f, 1.0f)
     .setValue(degrees(twistGradient))
-    .setDecimalPrecision(3)
+    .setDecimalPrecision(2)
     .moveTo(twistModGroup)
     .onRelease(new CallbackListener() {
       public void controlEvent(CallbackEvent event) {
@@ -398,6 +425,7 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderTwistGradient);
 
   yTwistPos += yStep;
 
@@ -406,7 +434,7 @@ void setupInterface() {
     .setSize(200, 20)
     .setRange(0, 10.0f)
     .setValue(degrees(twistWaveAmplitude))
-    .setDecimalPrecision(3)
+    .setDecimalPrecision(2)
     .moveTo(twistModGroup)
     .onRelease(new CallbackListener() {
       public void controlEvent(CallbackEvent event) {
@@ -419,6 +447,7 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderTwistWaveAmplitude);
 
   yTwistPos += yStep;
 
@@ -427,7 +456,7 @@ void setupInterface() {
     .setSize(200, 20)
     .setRange(0, 2.0f)
     .setValue(twistWaveFrequency)
-    .setDecimalPrecision(3)
+    .setDecimalPrecision(2)
     .moveTo(twistModGroup)
     .onRelease(new CallbackListener() {
       public void controlEvent(CallbackEvent event) {
@@ -440,6 +469,7 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderTwistWaveFrequency);
 
   yTwistPos += yStep;
 
@@ -448,7 +478,7 @@ void setupInterface() {
     .setSize(200, 20)
     .setRange(0, TWO_PI)
     .setValue(twistWavePhase)
-    .setDecimalPrecision(3)
+    .setDecimalPrecision(2)
     .moveTo(twistModGroup)
     .onRelease(new CallbackListener() {
       public void controlEvent(CallbackEvent event) {
@@ -461,6 +491,7 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderTwistWavePhase);
 
   // 统一底部留白（最后控件高度 20）
   int lastTwistTop = yTwistPos;
@@ -510,6 +541,23 @@ void setupInterface() {
     .align(ControlP5.LEFT, ControlP5.CENTER)
     .setPadding((int)(toggleShowTwistPlot.getWidth() + 6), 0); // 文本放到方形右侧
 
+  yDisplayPos += yStep;
+
+  toggleShowCameraInfo = cp5.addToggle("ShowCameraInfo")
+    .setPosition(10, yDisplayPos)
+    .setSize(20, 20) // 方形样式
+    .setValue(showCameraInfo)
+    .setCaptionLabel("Show Camera Info")
+    .moveTo(displayGroup)
+    .onChange(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        showCameraInfo = event.getController().getValue() > 0.5f;
+      }
+    });
+  toggleShowCameraInfo.getCaptionLabel()
+    .align(ControlP5.LEFT, ControlP5.CENTER)
+    .setPadding((int)(toggleShowCameraInfo.getWidth() + 6), 0); // 文本放到方形右侧
+
   // 统一底部留白（最后控件高度 20）
   int lastDisplayTop = yDisplayPos;
   displayGroup.setBackgroundHeight((int)(lastDisplayTop + 20 + UI_GROUP_GAP));
@@ -530,6 +578,7 @@ void setupInterface() {
     .setSize(200, 20)
     .setRange(0, 50)
     .setValue(1)
+    .setDecimalPrecision(0)
     .moveTo(exportGroup)
     .onRelease(new CallbackListener() {
       public void controlEvent(CallbackEvent event) {
@@ -542,13 +591,17 @@ void setupInterface() {
         isSliderDragging = true;
       }
     });
+  registerSlider(sliderThickness);
 
   yExportPos += yStep;
 
-  // Export按钮
+  // Export按钮：根据 Parameters 组宽度拆分为同一行的两列
+  int exportButtonsWidth = (int)((parametersGroup.getWidth() - 20 - UI_BUTTON_GAP) / 2);
+  int exportButtonsY = yExportPos;
+
   cp5.addButton("ExportSTL")
-    .setPosition(10, yExportPos)
-    .setSize(200, 30)
+    .setPosition(10, exportButtonsY)
+    .setSize(exportButtonsWidth, 30)
     .setLabel("Export STL")
     .moveTo(exportGroup)
     .onClick(new CallbackListener() {
@@ -557,11 +610,9 @@ void setupInterface() {
       }
     });
 
-  yExportPos += yStep + UI_BUTTON_GAP; // 统一按钮间距规则
-
   cp5.addButton("ExportPlotPNG")
-    .setPosition(10, yExportPos)
-    .setSize(200, 30)
+    .setPosition(10 + exportButtonsWidth + UI_BUTTON_GAP, exportButtonsY)
+    .setSize(exportButtonsWidth, 30)
     .setLabel("Export Plot PNG (2x)")
     .moveTo(exportGroup)
     .onClick(new CallbackListener() {
@@ -571,8 +622,10 @@ void setupInterface() {
     });
 
   // 为底部留白做准备
-  yExportPos += yStep;
+  yExportPos = exportButtonsY + 30;
   exportGroup.setBackgroundHeight((int)(yExportPos + UI_GROUP_GAP));
+
+  setupSliderInputField();
 
   // 在所有界面元素创建完成后，将下拉菜单置于最顶层
   dropdownParameterSets.bringToFront();
@@ -581,7 +634,43 @@ void setupInterface() {
 }
 
 void drawInterface() {
+  enforceSliderInputCleanState();
   cp5.draw();
+}
+
+void drawCameraInfo() {
+  if (!showCameraInfo) {
+    return;
+  }
+  // 在左下角显示摄像机视角、平移和缩放数值
+  pushStyle();
+  textAlign(LEFT, TOP);
+  textSize(12);
+
+  String[] lines = {
+    "rotX: " + nf(degrees(rotX), 0, 1) + " deg",
+    "rotY: " + nf(degrees(rotY), 0, 1) + " deg",
+    "pan:  (" + nf(panX, 0, 1) + ", " + nf(panY, 0, 1) + ")",
+    "zoom: " + nf(zoom, 0, 2)
+  };
+
+  int padding = 8;
+  int lineH = 16;
+  float boxW = 160; // 固定宽度
+  float boxH = 80;
+  float x = 20; // 与左侧 UI 对齐
+  float y = height - boxH - 20;
+
+  noStroke();
+  fill(0, 110); // 稍高对比度，提高清晰度
+  rect(x, y, boxW, boxH, 6); // 略带圆角
+
+  fill(255);
+  for (int i = 0; i < lines.length; i++) {
+    text(lines[i], x + padding, y + padding + i * lineH);
+  }
+
+  popStyle();
 }
 
 void updateParametersFromSliders() {
@@ -590,18 +679,18 @@ void updateParametersFromSliders() {
     setVertexCount(desiredVertexCount);
   }
 
-  numberOfStepGrowth = (int)sliderGrowthStep.getValue();
+  numberOfStepGrowth = round(sliderGrowthStep.getValue());
   if (sliderGrowthRate != null) {
     growthRate = sliderGrowthRate.getValue();
   }
-  bendAngle = 0.005f * sliderBendAngle.getValue();
-  twistAngle = 0.001f * sliderTwistAngle.getValue();
-  initGVL = 0.025f * sliderConeHight.getValue();
-  initSVL = 0.1f * sliderConeWidth.getValue();
-  sideShift = 0.01f * sliderSideShift.getValue();
-  shellThickness = 0.1f * sliderThickness.getValue();
+  bendAngle = 0.005f * round(sliderBendAngle.getValue());
+  twistAngle = 0.001f * round(sliderTwistAngle.getValue());
+  initGVL = 0.025f * round(sliderConeHight.getValue());
+  initSVL = 0.1f * round(sliderConeWidth.getValue());
+  sideShift = 0.01f * round(sliderSideShift.getValue());
+  shellThickness = 0.1f * round(sliderThickness.getValue());
   openingFlatten = sliderOpeningFlatten.getValue();
-  openingRotationDeg = sliderOpeningRotation.getValue();
+  openingRotationDeg = round(sliderOpeningRotation.getValue());
   if (sliderTwistGradient != null) {
     twistGradient = radians(sliderTwistGradient.getValue());
   }
@@ -620,18 +709,18 @@ void updateSliders() {
   if (sliderVertexCount != null) {
     sliderVertexCount.setValue(vertexCount);
   }
-  sliderGrowthStep.setValue(numberOfStepGrowth);
+  sliderGrowthStep.setValue(round(numberOfStepGrowth));
   if (sliderGrowthRate != null) {
     sliderGrowthRate.setValue(growthRate);
   }
-  sliderBendAngle.setValue(bendAngle * 200);
-  sliderTwistAngle.setValue(twistAngle * 1000);
-  sliderConeHight.setValue(initGVL * 40);
-  sliderConeWidth.setValue(initSVL * 10);
-  sliderSideShift.setValue(sideShift * 100);
-  sliderThickness.setValue(shellThickness * 10);
+  sliderBendAngle.setValue(round(bendAngle * 200));
+  sliderTwistAngle.setValue(round(twistAngle * 1000));
+  sliderConeHight.setValue(round(initGVL * 40));
+  sliderConeWidth.setValue(round(initSVL * 10));
+  sliderSideShift.setValue(round(sideShift * 100));
+  sliderThickness.setValue(round(shellThickness * 10));
   sliderOpeningFlatten.setValue(openingFlatten);
-  sliderOpeningRotation.setValue(openingRotationDeg);
+  sliderOpeningRotation.setValue(round(openingRotationDeg));
   if (sliderTwistGradient != null) {
     sliderTwistGradient.setValue(degrees(twistGradient));
   }
@@ -656,4 +745,135 @@ void updateDropdownParameterSets() {
     if (currentParameterSetIndex == -1) {
         cp5.getController("Parameter Sets").setCaptionLabel("New Parameter");
     }
+}
+
+void setupSliderInputField() {
+  sliderInputField = cp5.addTextfield("SliderInputField")
+    .setPosition(-10000, -10000)
+    .setSize(80, 22)
+    .setAutoClear(false)
+    .setInputFilter(ControlP5Constants.FLOAT)
+    .setVisible(false);
+  sliderInputField.getCaptionLabel().setVisible(false);
+}
+
+boolean isSliderInputActive() {
+  return sliderInputField != null && sliderInputField.isVisible();
+}
+
+boolean isMouseOverSliderInputField() {
+  if (!isSliderInputActive()) {
+    return false;
+  }
+  float[] pos = sliderInputField.getAbsolutePosition();
+  float sx = pos[0];
+  float sy = pos[1];
+  return mouseX >= sx && mouseX <= sx + sliderInputField.getWidth() &&
+         mouseY >= sy && mouseY <= sy + sliderInputField.getHeight();
+}
+
+boolean tryStartSliderInput() {
+  if (sliderInputField == null) {
+    return false;
+  }
+
+  for (Slider slider : allSliders) {
+    if (slider == null || !slider.isVisible()) {
+      continue;
+    }
+
+    float[] pos = slider.getAbsolutePosition();
+    float sx = pos[0];
+    float sy = pos[1];
+    if (mouseX >= sx && mouseX <= sx + slider.getWidth() && mouseY >= sy && mouseY <= sy + slider.getHeight()) {
+      beginSliderInput(slider);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void beginSliderInput(Slider slider) {
+  sliderBeingEdited = slider;
+  isSliderDragging = false;
+  float[] pos = slider.getAbsolutePosition();
+  sliderInputField.setPosition(pos[0], pos[1]);
+  sliderInputField.setSize(slider.getWidth(), slider.getHeight());
+  sliderInputField.setText(nf(slider.getValue(), 0, slider.getDecimalPrecision()));
+  sliderInputPrimed = true;
+  slider.hide();
+
+  sliderInputField.setVisible(true);
+  sliderInputField.bringToFront();
+  sliderInputField.setFocus(true);
+}
+
+void commitSliderInput() {
+  if (sliderBeingEdited == null) {
+    closeSliderInput();
+    return;
+  }
+
+  float typedValue = parseFloat(sliderInputField.getText());
+  if (!Float.isNaN(typedValue)) {
+    int precision = sliderBeingEdited.getDecimalPrecision();
+    if (precision > 0) {
+      float factor = pow(10, precision);
+      typedValue = round(typedValue * factor) / factor;
+    } else {
+      typedValue = round(typedValue);
+    }
+    typedValue = constrain(typedValue, sliderBeingEdited.getMin(), sliderBeingEdited.getMax());
+    sliderBeingEdited.setValue(typedValue);
+    saveState();
+  }
+
+  closeSliderInput();
+}
+
+void cancelSliderInput() {
+  closeSliderInput();
+}
+
+void closeSliderInput() {
+  if (sliderBeingEdited != null) {
+    sliderBeingEdited.show();
+  }
+
+  sliderBeingEdited = null;
+  sliderInputField.setVisible(false);
+  sliderInputField.setFocus(false);
+  sliderInputField.keepFocus(false);
+  sliderInputField.clear();
+  sliderInputField.setPosition(-10000, -10000); // move offscreen to avoid blocking clicks
+  isSliderDragging = false;
+  sliderInputPrimed = false;
+
+  // 兜底：确保所有滑块回到可见状态
+  for (Slider s : allSliders) {
+    if (s != null) {
+      s.show();
+    }
+  }
+}
+
+// 防御：偶发情况下 Textfield 可能保持焦点或可见，导致其它 slider 被“锁”。
+void enforceSliderInputCleanState() {
+  if (sliderInputField == null) {
+    return;
+  }
+
+  boolean visibleWithoutTarget = sliderInputField.isVisible() && sliderBeingEdited == null;
+  boolean hiddenButFocused = !sliderInputField.isVisible() && sliderInputField.isFocus();
+  if (visibleWithoutTarget || hiddenButFocused) {
+    closeSliderInput();
+  }
+
+  // 兜底：确保所有滑块可见，避免偶发隐藏后无法交互
+  for (Slider s : allSliders) {
+    if (s != null && !s.isVisible()) {
+      s.show();
+    }
+  }
 }

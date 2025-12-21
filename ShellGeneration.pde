@@ -12,7 +12,7 @@ import processing.opengl.*;
 
 void setup() {
   fullScreen(P3D);
-  shellShader = loadShader("shellFrag.glsl", "shellVert.glsl");
+  shellShader = loadShader("shaders/shellFrag.glsl", "shaders/shellVert.glsl");
   configureShellShader();
   backgroundTopColor = color(0x19, 0x19, 0x19);
   backgroundBottomColor = color(0xbc, 0xe1, 0xe7);
@@ -21,6 +21,9 @@ void setup() {
   initSerial();
   
   cp5 = new ControlP5(this);
+
+  // 默认摄像机视角，若 XML 中未写入视角则使用这一套
+  resetCameraView();
   
   initializeShapesAndRings(); // 确保在调用任何用 shape 的方法之前初始化它
   setupInterface();           // 初始化界面控件
@@ -29,12 +32,6 @@ void setup() {
   updateDropdownParameterSets(); // 更新下拉列表
   resetVectors();             // 置向量
   saveState();                // 保存初始状态
-
-  rotX = radians(-17.5);
-  rotY = radians(0);
-  panX = 35;
-  panY = -375;
-  zoom = 5.5;
 }
 
 void draw() {
@@ -89,10 +86,19 @@ void draw() {
     hint(ENABLE_DEPTH_TEST);
   }
 
+  drawCameraInfo();
   drawInterface();
   drawControlInterface();
   updateShapeFromControlVertices();
   
+}
+
+void resetCameraView() {
+  rotX = radians(DEFAULT_CAMERA_ROT_X_DEG);
+  rotY = radians(DEFAULT_CAMERA_ROT_Y_DEG);
+  panX = DEFAULT_CAMERA_PAN_X;
+  panY = DEFAULT_CAMERA_PAN_Y;
+  zoom = DEFAULT_CAMERA_ZOOM;
 }
 
 void initializeShapesAndRings() {

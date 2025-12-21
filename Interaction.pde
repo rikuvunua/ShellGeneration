@@ -1,4 +1,15 @@
 void mousePressed() {
+  if (isSliderInputActive()) {
+    if (!isMouseOverSliderInputField()) {
+      commitSliderInput();
+    }
+    return;
+  }
+
+  if (mouseButton == RIGHT && tryStartSliderInput()) {
+    return;
+  }
+
   if (mouseButton == CENTER) {
     lastMouseX = mouseX;
     lastMouseY = mouseY;
@@ -91,4 +102,21 @@ void applyIncrementalControl(int bendingDelta, int twistingDelta, int growthRate
     // 更新参数并重新计算
     updateParametersFromSliders();
     resetVectors();
+}
+
+void keyPressed() {
+  if (sliderInputField != null && sliderInputField.isVisible()) {
+    if (keyCode == ENTER || keyCode == RETURN) {
+      commitSliderInput();
+    } else if (key == ESC) {
+      key = 0; // 防止退出程序
+      cancelSliderInput();
+    } else {
+      // 第一键入时清空旧值，模拟全选覆盖
+      if (sliderInputPrimed && key != CODED && keyCode != TAB && keyCode != BACKSPACE && keyCode != DELETE) {
+        sliderInputField.clear();
+        sliderInputPrimed = false;
+      }
+    }
+  }
 }
