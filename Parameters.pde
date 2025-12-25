@@ -523,6 +523,7 @@ void resetParameters() {
     twistWaveAmplitude = 0.0f;
     twistWaveFrequency = 0.0f;
     twistWavePhase = 0.0f;
+    twistModEnabled = true;
     resetCameraView(); // 同时重置摄像机平移/视角
 
     // 重置当前参数集索引
@@ -555,6 +556,12 @@ void resetParameters() {
     }
     if (sliderTwistWavePhase != null) {
         sliderTwistWavePhase.setValue(twistWavePhase);
+    }
+    if (toggleTwistMod != null) {
+        toggleTwistMod.setValue(twistModEnabled);
+    }
+    if (toggleSpiralOverlay != null) {
+        toggleSpiralOverlay.setValue(showSpiralOverlay);
     }
     
     // 设置下拉菜单显示"New Parameter"

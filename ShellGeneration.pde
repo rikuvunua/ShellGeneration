@@ -37,7 +37,7 @@ void setup() {
 void draw() {
   processSerial();
 
-  int renderMode = (radio != null) ? (int)radio.getValue() : 1;
+  int renderMode = (radio != null) ? (int)radio.getValue() : 2;
   if (useGradientBackground) {
     drawBackgroundGradient();
   } else {
@@ -86,11 +86,76 @@ void draw() {
     hint(ENABLE_DEPTH_TEST);
   }
 
+  if (showSpiralOverlay) {
+    drawSpiralOverlay();
+  }
   drawCameraInfo();
   drawInterface();
   drawControlInterface();
   updateShapeFromControlVertices();
   
+}
+
+void drawSpiralOverlay() {
+  int ringCount = getVisibleRingCount();
+  int steps = constrain(ringCount, 8, 180);
+  float angleStep = abs(bendAngle) < 1e-4f ? 0.1f : bendAngle;
+  float grow = growthRate > 0 ? growthRate : 1.02f;
+  float radius = 8;
+  float theta = 0;
+
+  PVector[] pts = new PVector[steps];
+  float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE;
+  float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+  for (int i = 0; i < steps; i++) {
+    float x = radius * cos(theta);
+    float y = radius * sin(theta);
+    pts[i] = new PVector(x, y);
+    minX = min(minX, x);
+    maxX = max(maxX, x);
+    minY = min(minY, y);
+    maxY = max(maxY, y);
+    radius *= grow;
+    theta += angleStep;
+  }
+
+  float boxW = 160;
+  float boxH = 160;
+  float margin = 16;
+  float spanX = max(1e-3f, maxX - minX);
+  float spanY = max(1e-3f, maxY - minY);
+  float scaleFactor = 0.85f * min(boxW / spanX, boxH / spanY);
+
+  float spiralX = width - boxW - margin;
+  float spiralY = height - boxH - margin;
+  if (showTwistPlot2D) {
+    float plotWidth = TWIST_PLOT_WIDTH;
+    float plotMargin = TWIST_PLOT_MARGIN;
+    spiralX = width - plotWidth - plotMargin - boxW - 12;
+  }
+
+  pushStyle();
+  pushMatrix();
+  hint(DISABLE_DEPTH_TEST);
+  noStroke();
+  fill(255);
+  rect(spiralX, spiralY, boxW, boxH); // 白色背景，无圆角
+
+  translate(spiralX + boxW / 2, spiralY + boxH / 2);
+  stroke(0, 120, 255);
+  strokeWeight(2);
+  noFill();
+  beginShape();
+  for (int i = 0; i < steps; i++) {
+    float sx = (pts[i].x - (minX + maxX) * 0.5f) * scaleFactor;
+    float sy = (pts[i].y - (minY + maxY) * 0.5f) * scaleFactor;
+    vertex(sx, sy);
+  }
+  endShape();
+
+  hint(ENABLE_DEPTH_TEST);
+  popMatrix();
+  popStyle();
 }
 
 void resetCameraView() {
@@ -440,7 +505,7 @@ void drawShellOutline() {
     return;
   }
 
-  float outlineOffset = 2f / max(zoom, 0.0001f); // 按缩放保持视觉厚度（外轮廓粗细为2）
+  float outlineOffset = 2.5f / max(zoom, 0.0001f); // 按缩放保持视觉厚度（外轮廓粗细为4，较之前加倍）
 
   pushStyle();
   hint(DISABLE_DEPTH_TEST); // 不写入深度，让后续线框盖住轮廓内部
@@ -451,10 +516,10 @@ void drawShellOutline() {
   for (int i = 0; i < ringCount - 1; i++) {
     for (int j = 0; j < vertexCount; j++) {
       int nextJ = (j + 1) % vertexCount;
-      PVector outer00 = getOffsetOuterPoint(i, j, outlineOffset);
-      PVector outer10 = getOffsetOuterPoint(i + 1, j, outlineOffset);
-      PVector outer11 = getOffsetOuterPoint(i + 1, nextJ, outlineOffset);
-      PVector outer01 = getOffsetOuterPoint(i, nextJ, outlineOffset);
+      PVector outer00 = PVector.add(getAnimatedRingPoint(i, j).copy(), PVector.mult(outerNormals[i][j], outlineOffset));
+      PVector outer10 = PVector.add(getAnimatedRingPoint(i + 1, j).copy(), PVector.mult(outerNormals[i + 1][j], outlineOffset));
+      PVector outer11 = PVector.add(getAnimatedRingPoint(i + 1, nextJ).copy(), PVector.mult(outerNormals[i + 1][nextJ], outlineOffset));
+      PVector outer01 = PVector.add(getAnimatedRingPoint(i, nextJ).copy(), PVector.mult(outerNormals[i][nextJ], outlineOffset));
       beginShape();
       vertex(outer00.x, outer00.y, outer00.z);
       vertex(outer10.x, outer10.y, outer10.z);
@@ -468,10 +533,10 @@ void drawShellOutline() {
   for (int i = 0; i < ringCount - 1; i++) {
     for (int j = 0; j < vertexCount; j++) {
       int nextJ = (j + 1) % vertexCount;
-      PVector inner00 = getOffsetInnerPoint(i, j, outlineOffset);
-      PVector inner01 = getOffsetInnerPoint(i, nextJ, outlineOffset);
-      PVector inner11 = getOffsetInnerPoint(i + 1, nextJ, outlineOffset);
-      PVector inner10 = getOffsetInnerPoint(i + 1, j, outlineOffset);
+      PVector inner00 = PVector.add(getAnimatedRingPoint(i, j).copy(), PVector.mult(innerNormals[i][j], outlineOffset));
+      PVector inner01 = PVector.add(getAnimatedRingPoint(i, nextJ).copy(), PVector.mult(innerNormals[i][nextJ], outlineOffset));
+      PVector inner11 = PVector.add(getAnimatedRingPoint(i + 1, nextJ).copy(), PVector.mult(innerNormals[i + 1][nextJ], outlineOffset));
+      PVector inner10 = PVector.add(getAnimatedRingPoint(i + 1, j).copy(), PVector.mult(innerNormals[i + 1][j], outlineOffset));
       beginShape();
       vertex(inner00.x, inner00.y, inner00.z);
       vertex(inner01.x, inner01.y, inner01.z);
@@ -485,10 +550,10 @@ void drawShellOutline() {
   for (int i = 0; i < ringCount; i++) {
     for (int j = 0; j < vertexCount; j++) {
       int nextJ = (j + 1) % vertexCount;
-      PVector outer0 = getOffsetOuterPoint(i, j, outlineOffset);
-      PVector outer1 = getOffsetOuterPoint(i, nextJ, outlineOffset);
-      PVector inner1 = getOffsetInnerPoint(i, nextJ, outlineOffset);
-      PVector inner0 = getOffsetInnerPoint(i, j, outlineOffset);
+      PVector outer0 = PVector.add(getAnimatedRingPoint(i, j).copy(), PVector.mult(outerNormals[i][j], outlineOffset));
+      PVector outer1 = PVector.add(getAnimatedRingPoint(i, nextJ).copy(), PVector.mult(outerNormals[i][nextJ], outlineOffset));
+      PVector inner1 = PVector.add(getAnimatedRingPoint(i, nextJ).copy(), PVector.mult(innerNormals[i][nextJ], outlineOffset));
+      PVector inner0 = PVector.add(getAnimatedRingPoint(i, j).copy(), PVector.mult(innerNormals[i][j], outlineOffset));
       beginShape();
       vertex(outer0.x, outer0.y, outer0.z);
       vertex(outer1.x, outer1.y, outer1.z);
@@ -501,10 +566,10 @@ void drawShellOutline() {
   // 首端面
   for (int j = 0; j < vertexCount; j++) {
     int nextJ = (j + 1) % vertexCount;
-    PVector outer0 = getOffsetOuterPoint(0, j, outlineOffset);
-    PVector outer1 = getOffsetOuterPoint(0, nextJ, outlineOffset);
-    PVector inner1 = getOffsetInnerPoint(0, nextJ, outlineOffset);
-    PVector inner0 = getOffsetInnerPoint(0, j, outlineOffset);
+    PVector outer0 = PVector.add(getAnimatedRingPoint(0, j).copy(), PVector.mult(outerNormals[0][j], outlineOffset));
+    PVector outer1 = PVector.add(getAnimatedRingPoint(0, nextJ).copy(), PVector.mult(outerNormals[0][nextJ], outlineOffset));
+    PVector inner1 = PVector.add(getAnimatedRingPoint(0, nextJ).copy(), PVector.mult(innerNormals[0][nextJ], outlineOffset));
+    PVector inner0 = PVector.add(getAnimatedRingPoint(0, j).copy(), PVector.mult(innerNormals[0][j], outlineOffset));
     beginShape();
     vertex(outer0.x, outer0.y, outer0.z);
     vertex(outer1.x, outer1.y, outer1.z);
@@ -517,10 +582,10 @@ void drawShellOutline() {
   int lastIndex = ringCount - 1;
   for (int j = 0; j < vertexCount; j++) {
     int nextJ = (j + 1) % vertexCount;
-    PVector outer0 = getOffsetOuterPoint(lastIndex, j, outlineOffset);
-    PVector outer1 = getOffsetOuterPoint(lastIndex, nextJ, outlineOffset);
-    PVector inner1 = getOffsetInnerPoint(lastIndex, nextJ, outlineOffset);
-    PVector inner0 = getOffsetInnerPoint(lastIndex, j, outlineOffset);
+    PVector outer0 = PVector.add(getAnimatedRingPoint(lastIndex, j).copy(), PVector.mult(outerNormals[lastIndex][j], outlineOffset));
+    PVector outer1 = PVector.add(getAnimatedRingPoint(lastIndex, nextJ).copy(), PVector.mult(outerNormals[lastIndex][nextJ], outlineOffset));
+    PVector inner1 = PVector.add(getAnimatedRingPoint(lastIndex, nextJ).copy(), PVector.mult(innerNormals[lastIndex][nextJ], outlineOffset));
+    PVector inner0 = PVector.add(getAnimatedRingPoint(lastIndex, j).copy(), PVector.mult(innerNormals[lastIndex][j], outlineOffset));
     beginShape();
     vertex(outer0.x, outer0.y, outer0.z);
     vertex(outer1.x, outer1.y, outer1.z);

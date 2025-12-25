@@ -7,6 +7,8 @@ Button resetButton, undoButton, redoButton;
 Toggle toggleGradientBackground;
 Toggle toggleShowTwistPlot;
 Toggle toggleShowCameraInfo;
+Toggle toggleTwistMod;
+Toggle toggleSpiralOverlay;
 Textfield sliderInputField = null;
 boolean sliderInputPrimed = false; // first key replaces existing text
 
@@ -230,7 +232,7 @@ void setupInterface() {
     .addItem("Show Shell Surface", 2)   // 保持文字不变
     .addItem("Show 3D Model", 3)         // 保持文字不变
     .setItemsPerRow(1)           // 垂直排列避免重叠
-    .activate(0)
+    .activate(1)
     .moveTo(parametersGroup);
 
   yPos += yStep * 3;  // 为三个单选项留出空间
@@ -508,8 +510,12 @@ void setupInterface() {
 
   int yDisplayPos = 10;
 
+  int displayColWidth = (int)((parametersGroup.getWidth() - 20 - UI_BUTTON_GAP) / 2);
+  int displayLeftX = 10;
+  int displayRightX = 10 + displayColWidth + UI_BUTTON_GAP;
+
   toggleGradientBackground = cp5.addToggle("Gradient Background")
-    .setPosition(10, yDisplayPos)
+    .setPosition(displayLeftX, yDisplayPos)
     .setSize(20, 20) // 方形样式
     .setValue(useGradientBackground)
     .setCaptionLabel("Gradient Background")
@@ -524,10 +530,27 @@ void setupInterface() {
     .align(ControlP5.LEFT, ControlP5.CENTER)
     .setPadding((int)(toggleGradientBackground.getWidth() + 6), 0); // 文本放到方形右侧
 
+  // 交换右侧：第一行显示 Twist Mod 开关
+  toggleTwistMod = cp5.addToggle("TwistModEnabled")
+    .setPosition(displayRightX, yDisplayPos)
+    .setSize(20, 20)
+    .setValue(twistModEnabled)
+    .setCaptionLabel("Enable Twist Mod")
+    .moveTo(displayGroup)
+    .onChange(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        twistModEnabled = event.getController().getValue() > 0.5f;
+      }
+    });
+  toggleTwistMod.getCaptionLabel()
+    .align(ControlP5.LEFT, ControlP5.CENTER)
+    .setPadding((int)(toggleTwistMod.getWidth() + 6), 0);
+
   yDisplayPos += yStep;
 
+  // 第二行：左侧显示扭转图开关，右侧摄像机信息
   toggleShowTwistPlot = cp5.addToggle("ShowTwistPlot")
-    .setPosition(10, yDisplayPos)
+    .setPosition(displayLeftX, yDisplayPos)
     .setSize(20, 20) // 方形样式
     .setValue(showTwistPlot2D)
     .setCaptionLabel("Show Twist Plot")
@@ -541,10 +564,8 @@ void setupInterface() {
     .align(ControlP5.LEFT, ControlP5.CENTER)
     .setPadding((int)(toggleShowTwistPlot.getWidth() + 6), 0); // 文本放到方形右侧
 
-  yDisplayPos += yStep;
-
   toggleShowCameraInfo = cp5.addToggle("ShowCameraInfo")
-    .setPosition(10, yDisplayPos)
+    .setPosition(displayRightX, yDisplayPos)
     .setSize(20, 20) // 方形样式
     .setValue(showCameraInfo)
     .setCaptionLabel("Show Camera Info")
@@ -557,6 +578,24 @@ void setupInterface() {
   toggleShowCameraInfo.getCaptionLabel()
     .align(ControlP5.LEFT, ControlP5.CENTER)
     .setPadding((int)(toggleShowCameraInfo.getWidth() + 6), 0); // 文本放到方形右侧
+
+  yDisplayPos += yStep;
+
+  // 第三行：螺线开关（左侧）
+  toggleSpiralOverlay = cp5.addToggle("ShowSpiralOverlay")
+    .setPosition(displayLeftX, yDisplayPos)
+    .setSize(20, 20)
+    .setValue(showSpiralOverlay)
+    .setCaptionLabel("Show Spiral Overlay")
+    .moveTo(displayGroup)
+    .onChange(new CallbackListener() {
+      public void controlEvent(CallbackEvent event) {
+        showSpiralOverlay = event.getController().getValue() > 0.5f;
+      }
+    });
+  toggleSpiralOverlay.getCaptionLabel()
+    .align(ControlP5.LEFT, ControlP5.CENTER)
+    .setPadding((int)(toggleSpiralOverlay.getWidth() + 6), 0);
 
   // 统一底部留白（最后控件高度 20）
   int lastDisplayTop = yDisplayPos;
@@ -858,7 +897,7 @@ void closeSliderInput() {
   }
 }
 
-// 防御：偶发情况下 Textfield 可能保持焦点或可见，导致其它 slider 被“锁”。
+// 防御：偶发情况下 Textfield 可能保持焦点或可见，导致其它 slider 被“锁”。 
 void enforceSliderInputCleanState() {
   if (sliderInputField == null) {
     return;
